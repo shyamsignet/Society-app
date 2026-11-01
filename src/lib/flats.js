@@ -9,7 +9,8 @@ export const NUMBERING = [
   { value: 'tower-ground', label: 'A-G01 … A-101 (ground floor = G)', sample: 'A-G01' },
   { value: 'floor', label: '101, 102 … (no tower in the number)', sample: '101' },
   { value: 'tower-serial', label: 'A-1, A-2, A-3 … (running number per tower)', sample: 'A-1' },
-  { value: 'serial', label: '1, 2, 3 … (running number for the whole society)', sample: '1' }
+  { value: 'serial', label: '1, 2, 3 … (running number for the whole society)', sample: '1' },
+  { value: 'serial-2', label: '01, 02, 03 … (two-digit running number for the whole society)', sample: '01' }
 ]
 
 const two = (n) => String(n).padStart(2, '0')
@@ -21,6 +22,7 @@ export function flatNumber(style, { tower, floor, n, serial, global }) {
     case 'floor': return `${floor === 0 ? 'G' : floor}${two(n)}`
     case 'tower-serial': return `${t}${serial}`
     case 'serial': return String(global)
+    case 'serial-2': return String(global).padStart(2, '0')
     default: return `${t}${floor}${two(n)}`
   }
 }
