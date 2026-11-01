@@ -32,14 +32,34 @@ live-update feed.
 
 Open **Authentication → Sign In / Providers** (menu names may differ slightly).
 
-**Email codes – free, works immediately**
-1. Email is enabled by default.
-2. Go to **Authentication → Emails → Templates → Magic Link** and make sure the
-   message contains `{{ .Token }}` — e.g. *"Your Sociyo login code is {{ .Token }}"*.
-   The app asks for this 6-digit code.
-3. Supabase's built-in email sender only allows a few emails per hour. For a real
-   society, add your own SMTP sender under **Authentication → Emails → SMTP settings**
-   (Brevo, Resend, Zoho, Gmail Workspace… most have a free tier).
+**Email codes – free (needs your own email sender)**
+
+Supabase's built-in sender only emails members of your Supabase team, a few per
+hour, so residents would never receive their codes. Templates also can't be edited
+until you add your own sender (SMTP).
+
+1. **Your own sender (SMTP).** The simplest free option is the society's Gmail
+   (about 500 emails/day):
+   - Gmail → **myaccount.google.com → Security** → turn on **2-Step Verification**.
+   - Open **myaccount.google.com/apppasswords** → create one named `Sociyo Supabase`
+     → copy the 16-character password (shown only once).
+   - Supabase → **Authentication → Emails → SMTP Settings** → **Enable custom SMTP**:
+     sender email and username = the Gmail address, sender name `Sociyo`,
+     host `smtp.gmail.com`, port `465`, password = the app password (no spaces).
+   - Brevo (free, 300/day) or Zoho work the same way.
+2. **Raise the email limit:** **Authentication → Rate Limits** → emails per hour
+   around **100**, so a whole tower can log in on launch day.
+3. **Send a code, not a link.** **Authentication → Emails → Templates** – edit
+   **both** templates (a new address gets *Confirm signup*, later logins get *Magic Link*).
+   Subject `Your Sociyo login code`, body:
+   ```html
+   <h2>Your Sociyo login code</h2>
+   <p>Enter this code in the app:</p>
+   <h1 style="letter-spacing:6px">{{ .Token }}</h1>
+   <p>The code expires in 1 hour. If you didn't ask for it, ignore this email.</p>
+   ```
+4. **Code length:** **Authentication → Sign In / Providers → Email** → **Email OTP
+   Length** = `6` (new projects default to 8; the app accepts 6–10 digits either way).
 
 **SMS codes – what most residents expect**
 1. **Phone** provider → Enable → pick an SMS provider (Twilio, Twilio Verify,
@@ -76,6 +96,14 @@ Open **Authentication → Sign In / Providers** (menu names may differ slightly)
 1. Open the app → log in with **your** mobile number (or email).
 2. Choose **Set up a new society** and follow the 4 steps: society details,
    towers & flats, you, maintenance & amenities. You become the **Super Admin**.
+   - **Flat numbering:** pick the style your society uses – `A-101`, `A-G01`
+     (ground floor = G), `101` (single building), `A-1` or `1, 2, 3…`. Wings can
+     have names (`ROSE`, `WING 1`, `SHOPS`).
+   - Odd flats (shops, penthouses, 12B …) can be added, renamed or deleted later in
+     **Admin → Residents & apartments → Flats** – tap a flat to edit it. Renaming
+     keeps its residents and bills; only empty flats can be deleted.
+   - Forgot to pick your own flat? **Admin → Residents & apartments → People →**
+     *(you)* **→ Flat → Save flat**. The same screen moves anyone to another flat.
 3. You land on **Import from spreadsheet**:
    - Tap **Template**, fill it in Excel / Google Sheets
      (`flat, name, mobile, email, owner_tenant, role, opening_balance`),
@@ -91,6 +119,11 @@ Open **Authentication → Sign In / Providers** (menu names may differ slightly)
 5. **Admin → Staff & contacts**: add plumber, electrician, housekeeping, etc.
    (used for complaint assignment) and any extra emergency numbers.
 6. **Admin → Facilities & bookings → Facilities**: adjust timings, charges and rules.
+
+**Family members:** a resident opens **Profile → Family members → Add**, turns on
+**Give app login** and enters the family member's mobile number and/or email. They
+can then log in straight away (no approval) with *Limited* or *Full* access. Until SMS
+is set up, use the email.
 
 Residents in the spreadsheet can now simply log in with their mobile number –
 no invitations needed. Anyone not in the list can tap **Join my society**, enter

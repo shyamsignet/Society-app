@@ -4,7 +4,8 @@ import { Page, Card, Chips, Avatar, Sheet, Empty, Badge, Tabs } from '../compone
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { roleLabel, can } from '../lib/rbac'
-import { aptNo } from '../lib/actions'
+import { aptNo, aptById } from '../lib/actions'
+import { towerLabel, sortTowers } from '../lib/flats'
 import { cls } from '../lib/utils'
 
 const ICONS = { building: Building2, shield: Shield, wrench: Wrench, zap: Zap, droplet: Droplet, sparkles: Sparkles, 'arrow-up-down': ArrowUpDown, siren: Siren, ambulance: Ambulance, flame: Flame, badge: BadgeCheck, hospital: Hospital }
@@ -22,12 +23,13 @@ export default function Directory() {
   const committee = useData((d) => d.list('users', (u) => COMMITTEE.includes(u.role)))
   const contacts = useData((d) => d.list('contacts'))
   const staffAdmin = can(user, 'residents.manage')
+  const towers = useData((d) => [...new Set(d.list('apartments').map((a) => a.tower || ''))].filter(Boolean).sort(sortTowers).join('|')).split('|').filter(Boolean)
   const s = q.trim().toLowerCase()
   const list = users
-    .map((u) => ({ u, apt: aptNo(u.apartmentId) }))
-    .filter(({ u, apt }) => (tower === 'all' || apt.startsWith(tower)) && (!s || u.name.toLowerCase().includes(s) || ((u.privacy?.showApartment !== false || staffAdmin) && apt.toLowerCase().includes(s))))
-    .sort((a, b) => a.apt.localeCompare(b.apt))
-  const groups = list.reduce((m, x) => { const k = x.apt[0]; (m[k] = m[k] || []).push(x); return m }, {})
+    .map((u) => ({ u, apt: aptNo(u.apartmentId), tw: aptById(u.apartmentId)?.tower || '' }))
+    .filter(({ u, apt, tw }) => (tower === 'all' || tw === tower) && (!s || u.name.toLowerCase().includes(s) || ((u.privacy?.showApartment !== false || staffAdmin) && apt.toLowerCase().includes(s))))
+    .sort((a, b) => sortTowers(a.tw, b.tw) || a.apt.localeCompare(b.apt, undefined, { numeric: true }))
+  const groups = list.reduce((m, x) => { const k = x.tw; (m[k] = m[k] || []).push(x); return m }, {})
 
   return (
     <Page title="Directory" subtitle={`${users.length} residents · ${contacts.length} useful contacts`}>
@@ -38,10 +40,10 @@ export default function Directory() {
             <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or flat (e.g. B-203)" className="w-full h-12 rounded-2xl bg-white shadow-card pl-10 pr-4 text-[15px] outline-none focus:ring-2 focus:ring-brand-200" />
           </div>
-          <Chips className="mt-3" value={tower} onChange={setTower} options={[{ value: 'all', label: 'All towers' }, { value: 'A', label: 'Tower A' }, { value: 'B', label: 'Tower B' }, { value: 'C', label: 'Tower C' }]} />
+          <Chips className="mt-3" value={tower} onChange={setTower} options={[{ value: 'all', label: 'All towers' }, ...towers.map((t) => ({ value: t, label: towerLabel(t) }))]} />
           {Object.entries(groups).map(([t, rows]) => (
             <div key={t}>
-              <div className="text-xs font-bold text-ink-400 uppercase tracking-wider mt-5 mb-2">Tower {t} · {rows.length}</div>
+              <div className="text-xs font-bold text-ink-400 uppercase tracking-wider mt-5 mb-2">{t ? towerLabel(t) : 'Residents'} · {rows.length}</div>
               <Card className="divide-y divide-ink-100 overflow-hidden">
                 {rows.map(({ u, apt }) => {
                   const showApt = u.privacy?.showApartment !== false || staffAdmin || u.id === user.id

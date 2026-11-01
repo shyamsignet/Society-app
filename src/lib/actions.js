@@ -5,6 +5,7 @@ import { db } from './db'
 import { can } from './rbac'
 import { translate } from '../i18n'
 import { uid, otp6, ymOf, monthLabel, fmtDateTime, fmtShort, inr } from './utils'
+import { cleanTower, normFlatNumber, flatKey, newFlatId, towerLabel } from './flats'
 
 export class AppError extends Error {}
 const must = (cond, msg) => { if (!cond) throw new AppError(msg) }
@@ -85,6 +86,61 @@ export function updateUser(actor, id, patch) {
   if (patch.role) guard(actor, 'residents.manage')
   if (patch.name !== undefined) req(patch.name, 'Name')
   return db.update('users', id, patch)
+}
+
+// ---------- Flats ----------
+// Put a person in a flat (or none, for office staff) and record owner/tenant.
+export function setMemberFlat(actor, userId, apartmentId, occupancy) {
+  guard(actor, 'residents.manage')
+  const u = db.get('users', userId)
+  must(u, 'Person not found.')
+  if (apartmentId) must(aptById(apartmentId), 'Flat not found.')
+  db.update('users', userId, { apartmentId: apartmentId || null })
+  if (apartmentId && occupancy && aptById(apartmentId).occupancy !== occupancy) db.update('apartments', apartmentId, { occupancy })
+}
+
+const ensureTower = (code) => {
+  if (!code || db.list('towers').some((t) => t.code === code)) return
+  db.insert('towers', { id: newFlatId(code, new Set(db.list('towers').map((t) => t.id))).replace(/^apt_/, 'tw_'), code, name: towerLabel(code), floors: 0 })
+}
+
+// Add (id = null) or edit a flat. The record id never changes, so renaming
+// a flat keeps its residents, bills and history attached.
+export function saveFlat(actor, id, data) {
+  guard(actor, 'residents.manage')
+  const number = normFlatNumber(data.number)
+  req(number, 'Flat number')
+  const tower = cleanTower(data.tower)
+  const clash = db.list('apartments').find((a) => a.id !== id && flatKey(a.number) === flatKey(number))
+  must(!clash, `Flat ${clash?.number} already exists.`)
+  const rec = { number, tower, floor: Number(data.floor) || 0, type: (data.type || '').trim(), area: Number(data.area) || 0, occupancy: data.occupancy === 'tenant' ? 'tenant' : 'owner' }
+  must(rec.area >= 0 && rec.floor >= -5 && rec.floor <= 200, 'Check the floor and area.')
+  ensureTower(tower)
+  if (id) return db.update('apartments', id, rec)
+  return db.insert('apartments', { id: newFlatId(number, new Set(db.list('apartments').map((a) => a.id))), ...rec })
+}
+
+// What still points at a flat (deleting is only allowed when nothing does).
+export function flatUsage(id) {
+  const n = (col, f = (x) => x.apartmentId === id) => db.list(col, f).length
+  return {
+    people: n('users'), bills: n('bills'), payments: n('payments'), bookings: n('bookings'), visitors: n('visitors'),
+    complaints: n('complaints'), requests: n('registrations', (r) => r.apartmentId === id && r.status === 'pending')
+  }
+}
+
+export function deleteFlat(actor, id) {
+  guard(actor, 'residents.manage')
+  const a = aptById(id)
+  must(a, 'Flat not found.')
+  const NAMES = { people: ['resident', 'residents'], bills: ['bill', 'bills'], payments: ['payment', 'payments'], bookings: ['booking', 'bookings'], visitors: ['visitor entry', 'visitor entries'], complaints: ['complaint', 'complaints'], requests: ['pending join request', 'pending join requests'] }
+  const used = Object.entries(flatUsage(id)).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${NAMES[k][v === 1 ? 0 : 1]}`)
+  must(!used.length, `${a.number} cannot be deleted – it still has ${used.join(', ')}. Move or remove those first, or just rename the flat.`)
+  db.remove('apartments', id)
+  if (a.tower && !db.list('apartments').some((x) => x.tower === a.tower)) {
+    const t = db.list('towers').find((x) => x.code === a.tower)
+    if (t) db.remove('towers', t.id)
+  }
 }
 
 // ---------- Announcements ----------

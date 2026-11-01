@@ -10,6 +10,7 @@ import { api } from '../lib/cloud'
 import { DEFAULT_SOCIETY } from '../lib/config'
 import { db } from '../lib/db'
 import { uid, cls } from '../lib/utils'
+import { NUMBERING, generateFlats, newFlatId, towerLabel } from '../lib/flats'
 
 export default function Onboarding() {
   const { logout, enter } = useAuth()
@@ -119,7 +120,6 @@ const STD_FACILITIES = [
 const COLORS = ['#6366F1', '#EF4444', '#0EA5E9', '#F97316', '#22C55E', '#8B5CF6', '#EC4899', '#EAB308']
 const slug = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
 const initials = (s) => s.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w)).map((w) => w[0]).join('').toUpperCase().slice(0, 3) || 'SS'
-export const flatNumber = (tower, floor, n, pad) => `${tower}-${floor}${String(n).padStart(pad, '0')}`
 
 function Setup({ onBack }) {
   const { enter, logout } = useAuth()
@@ -130,21 +130,25 @@ function Setup({ onBack }) {
   const [s, setS] = useState({ name: '', city: '', address: '', regNo: '', officePhone: '', officeEmail: '', securityPhone: '', code: '', codeTouched: false })
   const [towers, setTowers] = useState([{ code: 'A', floors: 7, perFloor: 4, area: 1050, type: '2 BHK' }])
   const [skipFlats, setSkipFlats] = useState(false)
+  const [numbering, setNumbering] = useState('tower-floor')
   const [me, setMe] = useState({ name: '', apartment: '' })
   const [bill, setBill] = useState({ mode: 'sqft', rate: 3, fixed: 2500, dueDay: 10, lateFee: 250, sinking: 500, water: 0 })
   const [fac, setFac] = useState(STD_FACILITIES.slice(0, 4).map((x) => x[0]))
   const set = (k) => (e) => setS((x) => ({ ...x, [k]: e.target.value, ...(k === 'name' && !x.codeTouched ? { code: slug(e.target.value) } : {}) }))
-  const pad = 2
-  const apartments = useMemo(() => skipFlats ? [] : towers.flatMap((t) => Array.from({ length: Number(t.floors) || 0 }, (_, i) => i + 1).flatMap((floor) => Array.from({ length: Number(t.perFloor) || 0 }, (_, j) => {
-    const number = flatNumber(t.code.trim().toUpperCase(), floor, j + 1, pad)
-    return { id: 'apt_' + number, number, tower: t.code.trim().toUpperCase(), floor, type: t.type, area: Number(t.area) || 0, occupancy: 'owner' }
-  }))), [towers, skipFlats, pad])
+  const apartments = useMemo(() => {
+    if (skipFlats) return []
+    const taken = new Set()
+    return generateFlats(towers, numbering).map((a) => { const id = newFlatId(a.number, taken); taken.add(id); return { id, ...a } })
+  }, [towers, skipFlats, numbering])
+  const dupNumbers = new Set(apartments.map((a) => a.number)).size !== apartments.length
+  const dupTowers = new Set(towers.map((t) => t.code.trim().toUpperCase())).size !== towers.length || towers.some((t) => !t.code.trim())
 
   const steps = ['Society', 'Towers & flats', 'You', 'Maintenance & amenities']
   const next = () => {
     setErr('')
     if (step === 0 && (!s.name.trim() || !/^[a-z0-9][a-z0-9_-]{2,39}$/.test(s.code))) return setErr(!s.name.trim() ? 'Enter the society name.' : 'Society code: 3–40 lowercase letters, numbers or dashes.')
-    if (step === 1 && !skipFlats && (!apartments.length || new Set(apartments.map((a) => a.id)).size !== apartments.length)) return setErr('Check the towers: each tower needs a unique code, floors and flats per floor.')
+    if (step === 1 && !skipFlats && (!apartments.length || dupTowers)) return setErr('Check the towers: each tower needs a unique code, floors and flats per floor.')
+    if (step === 1 && !skipFlats && dupNumbers) return setErr('Some flat numbers repeat across towers. Choose a numbering style that includes the tower, e.g. A-101.')
     if (step === 2 && !me.name.trim()) return setErr('Enter your name.')
     setStep(step + 1)
   }
@@ -160,7 +164,7 @@ function Setup({ onBack }) {
           prefs: { announcements: true, payments: true, complaints: true, visitors: true, bookings: true, events: true, social: true, marketplace: true, push: false, email: false, sms: false } })
       await enter(code)
       const now = new Date().toISOString()
-      const towerRows = [...new Set(apartments.map((a) => a.tower))].map((c) => ({ id: 'tw_' + c, code: c, name: 'Tower ' + c, floors: Math.max(...apartments.filter((a) => a.tower === c).map((a) => a.floor)) }))
+      const towerRows = [...new Set(apartments.map((a) => a.tower))].map((c) => ({ id: 'tw_' + c, code: c, name: towerLabel(c), floors: Math.max(...apartments.filter((a) => a.tower === c).map((a) => a.floor)) }))
       towerRows.forEach((t) => db.insert('towers', t))
       apartments.forEach((a) => db.insert('apartments', { ...a, createdAt: now }))
       db.insert('settings', { id: 'billing', value: {
@@ -210,11 +214,12 @@ function Setup({ onBack }) {
 
           {step === 1 && (
             <>
-              <p className="text-sm text-ink-500 mb-4">Describe each tower/wing. Flats are numbered like <b>A-101</b>, <b>A-102</b> … You can fix individual flats later or import them from a spreadsheet instead.</p>
+              <p className="text-sm text-ink-500 mb-4">Describe each tower/wing and choose how your flats are numbered. You can rename, add or remove individual flats later (Admin → Residents & apartments → Flats), or import them from a spreadsheet instead.</p>
+              {!skipFlats && <Field label="Flat numbering"><Select value={numbering} onChange={(e) => setNumbering(e.target.value)}>{NUMBERING.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select></Field>}
               {!skipFlats && towers.map((t, i) => (
                 <div key={i} className="rounded-2xl border border-ink-200 p-3 mb-3">
                   <div className="grid grid-cols-3 gap-2">
-                    <Field label="Tower code" className="mb-2"><Input value={t.code} maxLength={4} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, code: e.target.value.toUpperCase() } : x)))} /></Field>
+                    <Field label="Tower / wing" className="mb-2"><Input value={t.code} maxLength={12} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, code: e.target.value.toUpperCase() } : x)))} /></Field>
                     <Field label="Floors" className="mb-2"><Input type="number" min={1} max={60} value={t.floors} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, floors: e.target.value } : x)))} /></Field>
                     <Field label="Flats / floor" className="mb-2"><Input type="number" min={1} max={30} value={t.perFloor} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, perFloor: e.target.value } : x)))} /></Field>
                   </div>
@@ -226,7 +231,7 @@ function Setup({ onBack }) {
                 </div>
               ))}
               {!skipFlats && <Button variant="ghost" size="sm" icon={Plus} onClick={() => setTowers([...towers, { ...towers[towers.length - 1], code: String.fromCharCode((towers[towers.length - 1].code.charCodeAt(0) || 64) + 1) }])}>Add tower</Button>}
-              {!skipFlats && <p className="text-sm font-semibold mt-3">{apartments.length} flats · {apartments.slice(0, 3).map((a) => a.number).join(', ')}{apartments.length > 3 && ' …'}</p>}
+              {!skipFlats && <p className={cls('text-sm font-semibold mt-3', dupNumbers && 'text-red-600')}>{apartments.length} flats · {apartments.slice(0, 3).map((a) => a.number).join(', ')}{apartments.length > 3 && ` … ${apartments[apartments.length - 1].number}`}</p>}
               <div className="mt-3 border-t border-ink-100"><Toggle checked={skipFlats} onChange={setSkipFlats} label="I’ll import flats from a spreadsheet" desc="Use this if flat numbers or sizes vary a lot" /></div>
             </>
           )}

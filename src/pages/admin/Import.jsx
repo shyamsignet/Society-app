@@ -6,11 +6,11 @@ import { useData, db } from '../../lib/db'
 import { can, ROLES } from '../../lib/rbac'
 import { parseCSV } from '../../lib/csv'
 import { downloadCSV, uid, inr, ymOf, cls } from '../../lib/utils'
+import { flatKey, normFlatNumber, newFlatId, cleanTower, towerLabel } from '../../lib/flats'
 
 const COLORS = ['#F97316', '#0EA5E9', '#8B5CF6', '#EC4899', '#14B8A6', '#EAB308', '#6366F1', '#EF4444', '#22C55E', '#06B6D4']
 const ROLE_ALIASES = { '': 'resident', resident: 'resident', member: 'resident', chairman: 'chairman', chairperson: 'chairman', president: 'chairman', secretary: 'secretary', treasurer: 'treasurer', committee: 'committee', committee_member: 'committee', facility_manager: 'facility_manager', manager: 'facility_manager', security: 'security', guard: 'security', security_guard: 'security', super_admin: 'super_admin', admin: 'super_admin' }
 const digits = (s) => (s || '').replace(/\D/g, '').replace(/^(91|0)(?=\d{10}$)/, '')
-const normFlat = (s) => (s || '').toUpperCase().replace(/\s+/g, '').replace(/^([A-Z]+)(\d)/, '$1-$2')
 
 export default function Import() {
   const { user } = useAuth()
@@ -50,12 +50,11 @@ function Residents() {
   const users = useData((d) => d.list('users'))
   const [rows, setRows] = useState([])
   const [done, setDone] = useState(null)
-  const byFlat = new Map(apts.map((a) => [a.number.toUpperCase().replace(/\s+/g, ''), a]))
+  const byFlat = new Map(apts.map((a) => [flatKey(a.number), a]))
   const byPhone = new Map(users.filter((u) => u.phone).map((u) => [digits(u.phone).slice(-10), u]))
   const seen = new Set()
   const checked = rows.map((r) => {
-    const flatKey = normFlat(r.flat || r.flat_no || r.apartment || r.unit)
-    const apt = byFlat.get(flatKey)
+    const apt = byFlat.get(flatKey(r.flat || r.flat_no || r.apartment || r.unit))
     const phone = digits(r.mobile || r.phone || r.mobile_number).slice(-10)
     const role = ROLE_ALIASES[(r.role || '').toLowerCase().replace(/[^a-z]+/g, '_')]
     const occ = (r.owner_tenant || r.occupancy || r.type || 'owner').toLowerCase().startsWith('t') ? 'tenant' : 'owner'
@@ -78,7 +77,8 @@ function Residents() {
     const due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59).toISOString()
     let added = 0, updated = 0, balances = 0
     for (const r of good) {
-      const base = { name: r.name, phone: r.phone ? '+91 ' + r.phone : '', email: r.email, apartmentId: r.apt?.id || null, role: r.role, status: 'active' }
+      // never demote a Super Admin through a spreadsheet
+      const base = { name: r.name, phone: r.phone ? '+91 ' + r.phone : '', email: r.email, apartmentId: r.apt?.id || null, role: r.existing?.role === 'super_admin' ? 'super_admin' : r.role, status: 'active' }
       if (r.existing) { db.update('users', r.existing.id, base); updated++ }
       else {
         db.insert('users', { id: 'u_' + uid(), ...base, color: COLORS[(added + r.line) % COLORS.length], avatar: null, bio: '', family: [], vehicles: [], emergencyContact: null, joinedAt: now.toISOString(),
@@ -133,25 +133,26 @@ function Flats() {
   const towers = useData((d) => d.list('towers'))
   const [rows, setRows] = useState([])
   const [replace, setReplace] = useState(false)
-  const existing = new Set(apts.map((a) => a.number))
+  const byKey = new Map(apts.map((a) => [flatKey(a.number), a]))
   const seen = new Set()
   const checked = rows.map((r) => {
-    const number = normFlat(r.flat || r.flat_no || r.number)
-    const tower = (r.tower || r.wing || number.split('-')[0] || '').toUpperCase().trim()
+    const number = normFlatNumber(r.flat || r.flat_no || r.number)
+    const tower = cleanTower(r.tower || r.wing || (number.includes('-') ? number.split('-')[0] : ''))
     const errs = []
     if (!number) errs.push('flat number missing')
-    if (seen.has(number)) errs.push('repeated in file')
-    seen.add(number)
-    return { line: r._line, number, tower, floor: Number(r.floor) || Number((number.split('-')[1] || '').slice(0, -2)) || 0, type: r.type || r.bhk || '', area: Number(String(r.area || r.area_sqft || r.sqft || 0).replace(/[^\d.]/g, '')) || 0, errs, exists: existing.has(number) }
+    if (seen.has(flatKey(number))) errs.push('repeated in file')
+    seen.add(flatKey(number))
+    return { line: r._line, number, tower, floor: Number(r.floor) || Number((number.split('-')[1] || '').slice(0, -2)) || 0, type: r.type || r.bhk || '', area: Number(String(r.area || r.area_sqft || r.sqft || 0).replace(/[^\d.]/g, '')) || 0, errs, existing: byKey.get(flatKey(number)), exists: byKey.has(flatKey(number)) }
   })
   const good = checked.filter((r) => !r.errs.length && (replace || !r.exists))
   const template = () => downloadCSV('flats-template.csv', [['flat', 'tower', 'floor', 'type', 'area_sqft'], ['A-101', 'A', '1', '2 BHK', '1050'], ['A-102', 'A', '1', '3 BHK', '1450'], ['SHOP-1', 'Shops', '0', 'Shop', '400']])
   const run = () => {
-    for (const t of new Set(good.map((r) => r.tower))) if (t && !towers.some((x) => x.code === t)) db.insert('towers', { id: 'tw_' + t, code: t, name: (/^[A-Z]{1,2}$/.test(t) ? 'Tower ' : '') + t, floors: Math.max(...good.filter((r) => r.tower === t).map((r) => r.floor)) })
+    for (const t of new Set(good.map((r) => r.tower))) if (t && !towers.some((x) => x.code === t)) db.insert('towers', { id: newFlatId(t, new Set(towers.map((x) => x.id))).replace(/^apt_/, 'tw_'), code: t, name: towerLabel(t), floors: Math.max(...good.filter((r) => r.tower === t).map((r) => r.floor)) })
+    const taken = new Set(apts.map((a) => a.id))
     for (const r of good) {
       const rec = { number: r.number, tower: r.tower, floor: r.floor, type: r.type, area: r.area }
-      if (r.exists) db.update('apartments', 'apt_' + r.number, rec)
-      else db.insert('apartments', { id: 'apt_' + r.number, ...rec, occupancy: 'owner' })
+      if (r.existing) db.update('apartments', r.existing.id, rec)
+      else { const id = newFlatId(r.number, taken); taken.add(id); db.insert('apartments', { id, ...rec, occupancy: 'owner' }) }
     }
     toast(`${good.length} flats saved`)
     setRows([])

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ChevronRight, Users, Car, HeartPulse, ShieldCheck, Bell, LogOut, RotateCcw, Pencil, Plus, Trash2, Download, Smartphone, Home as HomeIcon, Info, LayoutDashboard, Phone, Mail } from 'lucide-react'
 import { Page, Card, Avatar, Sheet, Field, Input, Textarea, Select, Toggle, Button, Badge, useAction, useConfirm, useToast } from '../components/ui'
+import { towerLabel } from '../lib/flats'
 import { useAuth } from '../lib/auth'
 import { useData, db, resetDB } from '../lib/db'
 import { roleLabel, can } from '../lib/rbac'
@@ -52,7 +53,7 @@ export default function Profile() {
         <div className="text-xl font-extrabold mt-3">{user.name}</div>
         <div className="text-sm text-ink-500">{user.phone}</div>
         <div className="flex justify-center gap-2 mt-3 flex-wrap">
-          {apt && <Badge color="blue"><HomeIcon size={11} /> {apt.number} · Tower {apt.tower}</Badge>}
+          {apt && <Badge color="blue"><HomeIcon size={11} /> {apt.number}{apt.tower && !apt.number.startsWith(apt.tower) ? ` · ${towerLabel(apt.tower)}` : ''}</Badge>}
           {apt && <Badge color="gray">{apt.type} · {apt.occupancy}</Badge>}
           <Badge color={user.role === 'resident' ? 'green' : 'purple'}>{roleLabel(user.role)}</Badge>
           {user.familyOf && <Badge color="amber">{user.access === 'full' ? 'Family · full access' : 'Family · limited'}</Badge>}
@@ -131,17 +132,21 @@ function EditSheet({ open, onClose, user, save }) {
 
 function FamilySheet({ open, onClose, user, save, flatmates }) {
   const act = useAction()
-  const [f, setF] = useState({ name: '', relation: 'Spouse', phone: '', access: 'limited', appLogin: false })
+  const [f, setF] = useState({ name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false })
   const add = () => {
     if (!f.name.trim()) return
     const m = { id: uid('f'), name: f.name.trim(), relation: f.relation, phone: f.phone, access: f.access }
     if (f.appLogin) {
-      if (!/^\d{10}$/.test(f.phone.replace(/\D/g, '').slice(-10))) return act(() => { throw new Error('A 10-digit mobile number is needed for app access.') })
-      db.insert('users', { id: uid('u_'), name: m.name, phone: '+91 ' + f.phone.replace(/\D/g, '').slice(-10), email: '', apartmentId: user.apartmentId, role: 'resident', status: 'active', familyOf: user.id, access: f.access, color: '#14B8A6', avatar: null, bio: '', family: [], vehicles: [], emergencyContact: null, privacy: { ...user.privacy }, prefs: { ...user.prefs, push: false }, joinedAt: new Date().toISOString() })
+      const mobile = f.phone.replace(/\D/g, '').slice(-10)
+      const email = f.email.trim().toLowerCase()
+      if (f.phone.trim() && mobile.length !== 10) return act(() => { throw new Error('Enter a 10-digit mobile number.') })
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return act(() => { throw new Error('Enter a valid email address.') })
+      if (!mobile && !email) return act(() => { throw new Error('A mobile number or an email is needed for app access.') })
+      db.insert('users', { id: uid('u_'), name: m.name, phone: mobile ? '+91 ' + mobile : '', email, apartmentId: user.apartmentId, role: 'resident', status: 'active', familyOf: user.id, access: f.access, color: '#14B8A6', avatar: null, bio: '', family: [], vehicles: [], emergencyContact: null, privacy: { ...user.privacy }, prefs: { ...user.prefs, push: false }, joinedAt: new Date().toISOString() })
       m.hasLogin = true
     }
-    save({ family: [...(user.family || []), m] }, f.appLogin ? `${m.name} can now log in with ${f.phone}` : 'Family member added')
-    setF({ name: '', relation: 'Spouse', phone: '', access: 'limited', appLogin: false })
+    save({ family: [...(user.family || []), m] }, f.appLogin ? `${m.name} can now log in with ${[f.phone.trim(), f.email.trim()].filter(Boolean).join(' or ')}` : 'Family member added')
+    setF({ name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false })
   }
   return (
     <Sheet open={open} onClose={onClose} title="Family members">
@@ -165,7 +170,8 @@ function FamilySheet({ open, onClose, user, save, flatmates }) {
       <Field label="Permissions" hint={f.access === 'full' ? 'Can pay dues, approve visitors and book facilities' : 'Can view notices, feed and approve visitors only'}>
         <Select value={f.access} onChange={(e) => setF({ ...f, access: e.target.value })}><option value="limited">Limited access</option><option value="full">Full access</option></Select>
       </Field>
-      <Toggle checked={f.appLogin} onChange={(v) => setF({ ...f, appLogin: v })} label="Give app login" desc="They can log in with their own mobile number" />
+      <Toggle checked={f.appLogin} onChange={(v) => setF({ ...f, appLogin: v })} label="Give app login" desc="They log in with their own mobile number or email – no approval needed" />
+      {f.appLogin && <Field label="Email (for login by email code)" hint="Use this until SMS login is available in your society"><Input type="email" autoCapitalize="none" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>}
       <Button block icon={Plus} className="mt-3" onClick={add} disabled={!f.name.trim()}>Add member</Button>
     </Sheet>
   )
