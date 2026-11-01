@@ -1,5 +1,5 @@
 {
-  "name": "smart-society",
+  "name": "sociyo",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:db": "node supabase/test/security.test.cjs",
-    "mock-supabase": "node supabase/test/mock-supabase.cjs"
+    "mock-supabase": "node supabase/test/mock-supabase.cjs",
+    "flyer": "node docs/flyer/build-flyer.cjs"
   },
   "dependencies": {
     "@fontsource/noto-sans-devanagari": "^5.1.0",

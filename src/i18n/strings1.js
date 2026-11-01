@@ -98,7 +98,8 @@ export default [
   ['WhatsApp', 'WhatsApp', 'WhatsApp'],
   ['Notification', 'सूचना', 'सूचना'],
   ['Notifications', 'सूचना', 'सूचनाएँ'],
-  ['Smart Society', 'स्मार्ट सोसायटी', 'स्मार्ट सोसाइटी'],
+  ['Sociyo', 'सोसायो', 'सोसाइयो'],
+  ['Your society, sorted.', 'सोसायटी, सोपी.', 'सोसाइटी, आसान.'],
   // time
   ['just now', 'आत्ताच', 'अभी-अभी'],
   ['Good morning', 'सुप्रभात', 'सुप्रभात'],

@@ -96,7 +96,7 @@ function Calendar({ events }) {
 
 const icsDate = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 function downloadIcs(e, society) {
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SmartSociety//EN', 'BEGIN:VEVENT', `UID:${e.id}@smartsociety`, `DTSTAMP:${icsDate(new Date().toISOString())}`, `DTSTART:${icsDate(e.start)}`, `DTEND:${icsDate(e.end || e.start)}`, `SUMMARY:${e.title}`, `LOCATION:${e.venue}, ${society.name}`, `DESCRIPTION:${(e.description || '').replace(/\n/g, '\\n')}`, 'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', `DESCRIPTION:${e.title}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n')
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sociyo//EN', 'BEGIN:VEVENT', `UID:${e.id}@sociyo`, `DTSTAMP:${icsDate(new Date().toISOString())}`, `DTSTART:${icsDate(e.start)}`, `DTEND:${icsDate(e.end || e.start)}`, `SUMMARY:${e.title}`, `LOCATION:${e.venue}, ${society.name}`, `DESCRIPTION:${(e.description || '').replace(/\n/g, '\\n')}`, 'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', `DESCRIPTION:${e.title}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
   a.download = `${e.title.replace(/[^\w]+/g, '-')}.ics`
@@ -155,7 +155,7 @@ function Detail() {
             <div className="grid grid-cols-3 gap-2 mt-2">
               <Button variant="secondary" size="sm" icon={reminder ? BellOff : BellRing} onClick={() => { const on = act(() => toggleReminder(user, e.id)); toast(on === true ? 'We’ll remind you a day before' : 'Reminder removed', 'info') }}>{reminder ? 'Remind off' : 'Remind me'}</Button>
               <Button variant="secondary" size="sm" icon={CalendarPlus} onClick={() => downloadIcs(e, society)}>Calendar</Button>
-              <Button variant="secondary" size="sm" icon={Share2} onClick={async () => { const r = await shareText({ title: e.title, text: `${e.title} – ${fmtDateTime(e.start)} at ${e.venue}, ${society.name}. RSVP on Smart Society!` }); if (r === 'copied') toast('Copied') }}>Share</Button>
+              <Button variant="secondary" size="sm" icon={Share2} onClick={async () => { const r = await shareText({ title: e.title, text: `${e.title} – ${fmtDateTime(e.start)} at ${e.venue}, ${society.name}. RSVP on Sociyo!` }); if (r === 'copied') toast('Copied') }}>Share</Button>
             </div>
           </Card>
         )}

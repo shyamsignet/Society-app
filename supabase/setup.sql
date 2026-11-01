@@ -1,5 +1,5 @@
 -- =====================================================================
---  Smart Society – Supabase database setup
+--  Sociyo – Supabase database setup
 --  Run this ONCE in your Supabase project: SQL Editor → New query →
 --  paste this whole file → Run.  It is safe to run again (idempotent).
 --

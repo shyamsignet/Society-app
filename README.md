@@ -1,6 +1,10 @@
-# Smart Society 🌴
+# Sociyo
 
-A mobile-first, installable web app (PWA) for apartment community management:
+**Your society, sorted.** · सोसायटी, सोपी. · सोसाइटी, आसान.
+
+**Live app:** https://shyamsignet.github.io/Society-app/
+
+Sociyo is a mobile-first, installable web app (PWA) for apartment community management:
 announcements, community feed, maintenance payments, complaints, visitors & gate
 security, facility booking, marketplace, events, polls, emergency help and a
 role-based admin dashboard.
@@ -18,7 +22,7 @@ offline. No APK, no Android Studio, no computer needed.
 3. Go to the **Actions** tab → *Deploy to GitHub Pages* → **Run workflow**
    (or just push any commit to the default branch).
 4. After ~1 minute your app is live at
-   `https://<your-username>.github.io/Society-app/`.
+   **https://shyamsignet.github.io/Society-app/**.
 5. Open that link in Chrome on your phone → **Add to Home screen**.
 
 ## 2. Try the demo
@@ -73,6 +77,15 @@ Super Admin · Chairman · Secretary · Treasurer · Committee Member · Facilit
 Manager · Security Guard · Resident — permissions are defined in one place,
 `src/lib/rbac.js`, and enforced in both the UI and the data layer
 (`src/lib/actions.js`).
+
+### Brand
+- Name **Sociyo** (Marathi सोसायो, Hindi सोसाइयो); the wordmark on the login hero stays in Latin letters.
+- Taglines: *Your society, sorted.* · *सोसायटी, सोपी.* · *सोसाइटी, आसान.*
+- Icon: a rounded "S" made of two facing building outlines with a heart in the gap –
+  navy `#13254A`, green `#22C55E`. Source: `public/favicon.svg` and `src/components/Logo.jsx`
+  (PNG app icons in `public/` are rendered from the same artwork).
+- "Palm Grove Residency" is only the demo's sample society, not the brand.
+- Printable A4 flyer for residents: [`docs/flyer/`](docs/flyer/) (see its README).
 
 ## 4. Architecture
 

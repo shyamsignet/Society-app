@@ -1,4 +1,6 @@
-# Going live with your society
+# Going live with your society – Sociyo
+
+The app is published at **https://shyamsignet.github.io/Society-app/**.
 
 Out of the box the app runs as an **offline demo** (sample society, data kept on
 each phone). To use it for a real society, connect it to a free **Supabase**
@@ -33,7 +35,7 @@ Open **Authentication → Sign In / Providers** (menu names may differ slightly)
 **Email codes – free, works immediately**
 1. Email is enabled by default.
 2. Go to **Authentication → Emails → Templates → Magic Link** and make sure the
-   message contains `{{ .Token }}` — e.g. *"Your Smart Society code is {{ .Token }}"*.
+   message contains `{{ .Token }}` — e.g. *"Your Sociyo login code is {{ .Token }}"*.
    The app asks for this 6-digit code.
 3. Supabase's built-in email sender only allows a few emails per hour. For a real
    society, add your own SMTP sender under **Authentication → Emails → SMTP settings**
@@ -48,7 +50,7 @@ Open **Authentication → Sign In / Providers** (menu names may differ slightly)
 3. Until SMS is ready, residents can use the **Email** tab on the login screen.
 
 **URL Configuration** → set **Site URL** to your app address, e.g.
-`https://<your-github-name>.github.io/Society-app/`.
+`https://shyamsignet.github.io/Society-app/`.
 
 ## 4. Connect the app (5 min)
 
@@ -66,7 +68,7 @@ Open **Authentication → Sign In / Providers** (menu names may differ slightly)
    | `SOCIETY_CODE` | *(optional, add after step 5)* pre-fills "Join my society" |
 
 3. **Actions** tab → *Test & deploy to GitHub Pages* → **Run workflow**. After
-   ~2 minutes the app at your GitHub Pages address is in society mode (the demo
+   ~2 minutes the app at https://shyamsignet.github.io/Society-app/ is in society mode (the demo
    accounts disappear).
 
 ## 5. Set up the society in the app (15 min)
@@ -112,7 +114,7 @@ the society code, choose their flat, and the committee approves them under
 - [ ] Committee roles assigned; each committee member has logged in once
 - [ ] Security guard logged in on the gate phone (role `security`)
 - [ ] Test with 10–15 flats for two weeks (see the README's next steps)
-- [ ] Flyer updated with the app link and the **society code**
+- [ ] Flyer ([`docs/flyer/`](flyer/)) filled in with the society name, **society code** and office phone, then printed / shared on WhatsApp
 
 ## What the security rules guarantee
 

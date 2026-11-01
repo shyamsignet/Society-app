@@ -63,7 +63,7 @@ export default function Profile() {
       {installable && !isStandalone() && (
         <Card className="p-4 mt-3 flex items-center gap-3 bg-gradient-to-r from-accent-50 to-white">
           <Smartphone className="text-accent-700" />
-          <div className="flex-1"><div className="font-bold text-sm">Install Smart Society</div><div className="text-xs text-ink-500">Add to your home screen – works offline</div></div>
+          <div className="flex-1"><div className="font-bold text-sm">Install Sociyo</div><div className="text-xs text-ink-500">Add to your home screen – works offline</div></div>
           <Button size="sm" variant="success" icon={Download} onClick={promptInstall}>Install</Button>
         </Card>
       )}
@@ -96,7 +96,7 @@ export default function Profile() {
         <button onClick={async () => { if (await ask({ title: 'Log out?', ok: 'Log out' })) { logout(); nav('/') } }} className="w-full flex items-center gap-3 px-4 py-3.5 text-left font-semibold text-red-600"><LogOut size={18} /> {DEMO ? 'Log out / switch demo account' : 'Log out'}</button>
         {DEMO && <button onClick={async () => { if (await ask({ title: 'Reset demo data?', text: 'All changes on this device will be erased and the sample data restored.', ok: 'Reset', danger: true })) { await resetDB(); toast('Demo data restored') } }} className="w-full flex items-center gap-3 px-4 py-3.5 text-left font-semibold text-ink-500"><RotateCcw size={18} /> Reset demo data</button>}
       </Card>
-      <p className="text-center text-[11px] text-ink-400 mt-5">Smart Society · Made for {society.name}</p>
+      <p className="text-center text-[11px] text-ink-400 mt-5">Sociyo · Made for {society.name}</p>
 
       <EditSheet open={sheet === 'edit'} onClose={() => setSheet(null)} user={user} save={save} />
       <FamilySheet open={sheet === 'family'} onClose={() => setSheet(null)} user={user} save={save} flatmates={flatmates} />
@@ -108,7 +108,8 @@ export default function Profile() {
         <div className="text-sm text-ink-700 space-y-3">
           <p><b>{society.name}</b><br />{society.address}<br />Reg. No. {society.regNo}</p>
           {(society.officePhone || society.officeEmail) && <p className="flex items-center gap-2 flex-wrap">{society.officePhone && <><Phone size={14} /> {society.officePhone}</>} {society.officeEmail && <><Mail size={14} className="ml-2" /> {society.officeEmail}</>}</p>}
-          <p className="text-ink-500">Smart Society is an installable web app. In Chrome, tap ⋮ → <b>Add to Home screen</b> {DEMO ? 'to install it. It works offline; data is stored securely on this device in demo mode.' : 'to install it. Your society’s data is stored securely in the cloud and also works offline.'}</p>
+          <p className="text-ink-500"><b translate="no">Sociyo</b> – <span>Your society, sorted.</span></p>
+          <p className="text-ink-500">Sociyo is an installable web app. In Chrome, tap ⋮ → <b>Add to Home screen</b> {DEMO ? 'to install it. It works offline; data is stored securely on this device in demo mode.' : 'to install it. Your society’s data is stored securely in the cloud and also works offline.'}</p>
         </div>
       </Sheet>
     </Page>

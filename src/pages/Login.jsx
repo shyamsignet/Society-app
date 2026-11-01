@@ -9,20 +9,23 @@ import { otp6 } from '../lib/utils'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import { CLOUD, BRAND_NAME } from '../lib/config'
 import { sendOtp, verifyOtp } from '../lib/cloud'
+import Logo, { BrandLine } from '../components/Logo'
 
 export default function Login() {
   return CLOUD ? <CloudLogin /> : <DemoLogin />
 }
 
-export function Hero({ title, sub, emoji = '🏢' }) {
+export function Hero({ title, sub, emoji }) {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-[#0a1a2e] text-white px-6 pt-16 pb-24 safe-top">
       <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent-500/20 blur-2xl" />
       <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-sky-400/10 blur-2xl" />
       <div className="relative flex justify-end -mt-8 mb-6"><LanguageSwitcher dark /></div>
       <div className="relative">
-        <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur grid place-items-center text-3xl mb-5">{emoji}</div>
-        <p className="text-brand-200 text-sm font-medium">Smart Society</p>
+        {emoji
+          ? <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur grid place-items-center text-3xl mb-5">{emoji}</div>
+          : <Logo size={56} className="mb-5 rounded-2xl ring-1 ring-white/15" />}
+        <BrandLine mark={!!emoji} tagline={title !== 'Your society, sorted.'} />
         <h1 className="text-[28px] font-extrabold leading-tight mt-1">{title}</h1>
         {sub && <p className="text-brand-200 text-sm mt-1">{sub}</p>}
       </div>
@@ -51,7 +54,7 @@ function CloudLogin() {
   }
   return (
     <div className="min-h-full flex flex-col">
-      <Hero title={BRAND_NAME || 'Your society, in your pocket.'} sub={BRAND_NAME ? 'Smart Society' : ''} />
+      <Hero title={BRAND_NAME || 'Your society, sorted.'} />
       <div className="flex-1 -mt-14 px-4 pb-10 relative">
         <Card className="p-5">
           {step === 'id' ? (
@@ -134,7 +137,7 @@ function DemoLogin() {
         <div className="relative flex justify-end -mt-8 mb-6"><LanguageSwitcher dark /></div>
         <div className="relative">
           <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur grid place-items-center text-3xl mb-5">{society?.logoEmoji}</div>
-          <p className="text-brand-200 text-sm font-medium">Smart Society</p>
+          <BrandLine />
           <h1 className="text-[28px] font-extrabold leading-tight mt-1">{society?.name}</h1>
           <p className="text-brand-200 text-sm mt-1">{society?.city}</p>
         </div>

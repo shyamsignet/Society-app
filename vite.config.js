@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-push.js'],
       manifest: {
-        name: 'Smart Society',
-        short_name: 'Smart Society',
-        description: 'Apartment community management – payments, complaints, visitors, bookings and more.',
+        name: 'Sociyo – Your society, sorted.',
+        short_name: 'Sociyo',
+        description: 'Sociyo – your society, sorted. Maintenance payments, complaints, visitors, bookings, notices and more for your apartment society.',
         theme_color: '#13254A',
         background_color: '#F7F8FA',
         display: 'standalone',

@@ -328,7 +328,7 @@ export function receiptPdf(society, p) {
     })
     d.line(40, y, 555, y, '#CBD5E1')
     d.text(50, y + 24, 'Total paid', { size: 13, bold: true }); d.text(545, y + 24, inr(p.amount), { size: 13, bold: true, align: 'right' })
-    d.text(40, y + 80, 'This is a computer-generated receipt and does not require a signature.', { size: 9, color: '#64748B' })
+    d.text(40, y + 80, 'This is a computer-generated receipt and does not require a signature. Issued via Sociyo.', { size: 9, color: '#64748B' })
     d.text(40, y + 96, 'Thank you for your timely payment!', { size: 9, color: '#64748B' })
   })
 }

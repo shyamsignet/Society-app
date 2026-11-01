@@ -1,6 +1,5 @@
 // [English, मराठी, हिंदी] — cloud login, joining, society setup, import, staff & contacts
 export default [
-  ['Your society, in your pocket.', 'तुमची सोसायटी, तुमच्या खिशात.', 'आपकी सोसाइटी, आपकी जेब में.'],
   ['Mobile', 'मोबाईल', 'मोबाइल'],
   ['Enter a valid email address', 'वैध ईमेल पत्ता टाका', 'सही ईमेल पता डालें'],
   ['New to the app? Log in with your mobile number first — you can then join your society or set up a new one.', 'ॲपमध्ये नवीन आहात? आधी मोबाईल नंबरने लॉग इन करा — मग तुमच्या सोसायटीत सामील व्हा किंवा नवीन सोसायटी तयार करा.', 'ऐप में नए हैं? पहले मोबाइल नंबर से लॉग इन करें — फिर अपनी सोसाइटी से जुड़ें या नई सोसाइटी बनाएँ.'],
@@ -26,10 +25,10 @@ export default [
   ['Could not connect. Please try again.', 'जोडणी झाली नाही. पुन्हा प्रयत्न करा.', 'कनेक्ट नहीं हो सका. फिर से कोशिश करें.'],
   ['Upload failed – please check your internet and try again.', 'अपलोड झाले नाही – इंटरनेट तपासून पुन्हा प्रयत्न करा.', 'अपलोड नहीं हुआ – इंटरनेट जाँचकर फिर कोशिश करें.'],
   // onboarding
-  ['Welcome to Smart Society', 'स्मार्ट सोसायटीमध्ये स्वागत', 'स्मार्ट सोसाइटी में स्वागत है'],
+  ['Welcome to Sociyo', 'सोसायोमध्ये स्वागत', 'सोसाइयो में स्वागत है'],
   ['Let’s connect you to your society', 'चला, तुम्हाला तुमच्या सोसायटीशी जोडूया', 'आइए आपको आपकी सोसाइटी से जोड़ें'],
   ['You’re not linked to a society yet', 'तुम्ही अजून कोणत्याही सोसायटीशी जोडलेले नाही', 'आप अभी किसी सोसाइटी से जुड़े नहीं हैं'],
-  ['If your society already uses Smart Society, ask to join your flat. If you are setting it up for your committee, create the society.', 'तुमची सोसायटी आधीच स्मार्ट सोसायटी वापरत असेल तर तुमच्या सदनिकेसाठी सामील होण्याची विनंती करा. समितीसाठी सुरुवात करत असाल तर सोसायटी तयार करा.', 'अगर आपकी सोसाइटी पहले से स्मार्ट सोसाइटी उपयोग करती है तो अपने फ्लैट से जुड़ने का अनुरोध करें. समिति के लिए शुरुआत कर रहे हैं तो सोसाइटी बनाएँ.'],
+  ['If your society already uses Sociyo, ask to join your flat. If you are setting it up for your committee, create the society.', 'तुमची सोसायटी आधीच सोसायो वापरत असेल तर तुमच्या सदनिकेसाठी सामील होण्याची विनंती करा. समितीसाठी सुरुवात करत असाल तर सोसायटी तयार करा.', 'अगर आपकी सोसाइटी पहले से सोसाइयो उपयोग करती है तो अपने फ्लैट से जुड़ने का अनुरोध करें. समिति के लिए शुरुआत कर रहे हैं तो सोसाइटी बनाएँ.'],
   ['Join my society', 'माझ्या सोसायटीत सामील व्हा', 'मेरी सोसाइटी से जुड़ें'],
   ['I live here – add me to my flat', 'मी येथे राहतो – मला माझ्या सदनिकेत जोडा', 'मैं यहाँ रहता हूँ – मुझे मेरे फ्लैट से जोड़ें'],
   ['Set up a new society', 'नवीन सोसायटी तयार करा', 'नई सोसाइटी बनाएँ'],

@@ -257,7 +257,7 @@ const subs = new Set()
 export const onLangChange = (f) => { subs.add(f); return () => subs.delete(f) }
 function applyDocLang() {
   document.documentElement.lang = lang === 'en' ? 'en' : lang
-  document.title = translate('Smart Society')
+  document.title = translate('Sociyo')
 }
 export function setLang(code) {
   lang = code
