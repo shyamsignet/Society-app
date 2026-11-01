@@ -145,7 +145,7 @@ header .field:empty::before { color: #8FA3C7; }
         <div class="steps">
           <div class="step"><div class="n">1</div><div><b>Scan the QR code</b><span>Opens Sociyo in your browser – use <code>Chrome</code> on Android, <code>Safari</code> on iPhone.</span></div></div>
           <div class="step"><div class="n">2</div><div><b>Add to Home screen</b><span>Android: tap <code>⋮</code> → <code>Add to Home screen</code>. iPhone: tap <code>Share</code> → <code>Add to Home Screen</code>.</span></div></div>
-          <div class="step"><div class="n">3</div><div><b>Log in with your mobile number</b><span>Enter the code you receive. If asked, tap <code>Join my society</code> and enter the society code below.</span></div></div>
+          <div class="step"><div class="n">3</div><div><b>Log in &amp; join your society</b><span>Choose <code>Email</code> (or mobile), enter the code you receive, tap <code>Join my society</code>, type the society code below and pick your flat.</span></div></div>
         </div>
       </div>
       <div class="qr">
