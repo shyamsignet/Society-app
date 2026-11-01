@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import { ScanLine, KeyRound, Phone, LogOut, LogIn, Check, X, Users, Clock, UserPlus, Search, Package, Car, Wrench, User, ShieldCheck, Bell } from 'lucide-react'
 import { Page, Button, Card, Input, Field, Select, Sheet, Empty, Stat, Chips, IconButton, MediaPicker, useAction, useToast } from '../components/ui'
+import FlatPicker from '../components/FlatPicker'
 import { VisitorRow, V_ICON } from './Visitors'
 import { useAuth } from '../lib/auth'
 import { useData, db } from '../lib/db'
@@ -146,10 +147,9 @@ function Register() {
   const nav = useNavigate()
   const act = useAction()
   const [sp] = useSearchParams()
-  const towers = useData((d) => d.list('towers'))
-  const [f, setF] = useState({ type: VISITOR_TYPES[sp.get('type')] ? sp.get('type') : 'guest', name: '', phone: '', company: '', tower: 'A', apartmentId: '', vehicle: '', purpose: '', guests: 1 })
+  const [f, setF] = useState({ type: VISITOR_TYPES[sp.get('type')] ? sp.get('type') : 'guest', name: '', phone: '', company: '', apartmentId: '', vehicle: '', purpose: '', guests: 1 })
   const [photo, setPhoto] = useState([])
-  const apts = useData((d) => d.list('apartments', (a) => a.tower === f.tower))
+  const apts = useData((d) => d.list('apartments'))
   const occupied = useData((d) => new Set(d.list('users', (u) => u.apartmentId && u.status === 'active').map((u) => u.apartmentId)))
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   const submit = () => {
@@ -171,10 +171,7 @@ function Register() {
       )}
       <Field label="Visitor name"><Input value={f.name} onChange={set('name')} placeholder={f.type === 'guest' ? 'Full name' : 'Optional'} /></Field>
       <Field label="Mobile"><Input inputMode="tel" value={f.phone} onChange={set('phone')} /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Tower"><Select value={f.tower} onChange={(e) => setF({ ...f, tower: e.target.value, apartmentId: '' })}>{towers.map((t) => <option key={t.id} value={t.code}>{t.name}</option>)}</Select></Field>
-        <Field label="Flat"><Select value={f.apartmentId} onChange={set('apartmentId')}><option value="">Select</option>{apts.map((a) => <option key={a.id} value={a.id} disabled={!occupied.has(a.id)}>{a.number}{!occupied.has(a.id) ? ' (vacant)' : ''}</option>)}</Select></Field>
-      </div>
+      <FlatPicker apartments={apts} value={f.apartmentId} onChange={(id) => setF((x) => ({ ...x, apartmentId: id }))} disabled={(a) => !occupied.has(a.id)} option={(a) => `${a.number}${!occupied.has(a.id) ? ' (vacant)' : ''}`} />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Vehicle no."><Input value={f.vehicle} onChange={set('vehicle')} placeholder="Optional" /></Field>
         <Field label="People"><Input type="number" min={1} value={f.guests} onChange={set('guests')} /></Field>

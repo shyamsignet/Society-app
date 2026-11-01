@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, ShieldCheck, Smartphone, Building2, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { Button, Field, Input, Select, Card, useToast, Tabs } from '../components/ui'
+import FlatPicker from '../components/FlatPicker'
 import { useAuth } from '../lib/auth'
 import { db, useData } from '../lib/db'
 import { findUserByPhone, registerApartment } from '../lib/actions'
@@ -195,11 +196,10 @@ function DemoLogin() {
 }
 
 function Register({ onBack }) {
-  const towers = useData((d) => d.list('towers'))
-  const [f, setF] = useState({ name: '', phone: '', email: '', tower: 'A', apartmentId: '', occupancy: 'owner' })
+  const [f, setF] = useState({ name: '', phone: '', email: '', apartmentId: '', occupancy: 'owner' })
   const [err, setErr] = useState('')
   const [done, setDone] = useState(null)
-  const apts = useData((d) => d.list('apartments', (a) => a.tower === f.tower))
+  const apts = useData((d) => d.list('apartments'))
   const set = (k) => (e) => setF({ ...f, [k]: e.target ? e.target.value : e })
   const submit = () => {
     setErr('')
@@ -222,10 +222,7 @@ function Register({ onBack }) {
       <Field label="Full name"><Input value={f.name} onChange={set('name')} placeholder="As per sale deed / rent agreement" /></Field>
       <Field label="Mobile number"><Input inputMode="numeric" maxLength={10} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value.replace(/\D/g, '') })} placeholder="10-digit mobile" /></Field>
       <Field label="Email (optional)"><Input type="email" value={f.email} onChange={set('email')} placeholder="you@example.com" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Tower"><Select value={f.tower} onChange={(e) => setF({ ...f, tower: e.target.value, apartmentId: '' })}>{towers.map((t) => <option key={t.id} value={t.code}>{t.name}</option>)}</Select></Field>
-        <Field label="Apartment"><Select value={f.apartmentId} onChange={set('apartmentId')}><option value="">Select</option>{apts.map((a) => <option key={a.id} value={a.id}>{a.number} · {a.type}</option>)}</Select></Field>
-      </div>
+      <FlatPicker apartments={apts} value={f.apartmentId} onChange={(id) => setF((x) => ({ ...x, apartmentId: id }))} flatLabel="Apartment" option={(a) => `${a.number} · ${a.type}`} />
       <Field label="I am the"><Tabs tabs={[{ value: 'owner', label: 'Owner' }, { value: 'tenant', label: 'Tenant' }]} value={f.occupancy} onChange={set('occupancy')} /></Field>
       {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
       <Button block size="lg" onClick={submit}>Submit for approval</Button>

@@ -8,6 +8,7 @@ import { useData, db } from '../lib/db'
 import { can } from '../lib/rbac'
 import { COMPLAINT_CATEGORIES, SERVICE_CATEGORIES, STATUS_FLOW, STATUS_LABEL, createComplaint, setComplaintStatus, assignComplaint, addComplaintComment, rateComplaint, userById, aptNo, isOverdue, SLA_HOURS } from '../lib/actions'
 import { timeAgo, fmtDateTime, cls, isoDay } from '../lib/utils'
+import { towerLabel, sortTowers } from '../lib/flats'
 
 export const CAT_ICON = { Plumbing: Droplets, Electrical: Zap, Lift: ArrowUpDown, Cleaning: Sparkles, Security: Shield, Parking: Car, 'Water Supply': Waves, Noise: Volume2, 'Common Area': Trees, Other: HelpCircle }
 
@@ -93,17 +94,20 @@ function NewComplaint() {
   const act = useAction()
   const [sp] = useSearchParams()
   const kind = KIND[sp.get('kind')] ? sp.get('kind') : 'complaint'
-  const towers = useData((d) => d.list('towers'))
+  // wings and floors come from the society's actual flats
+  const towers = useData((d) => [...new Set(d.list('apartments').map((a) => a.tower || ''))].filter(Boolean).sort(sortTowers).join('|')).split('|').filter(Boolean)
+  const floors = useData((d) => [...new Set(d.list('apartments').map((a) => Number(a.floor) || 0))].sort((a, b) => a - b).join('|')).split('|').filter((x) => x !== '').map(Number)
   const [f, setF] = useState({
     title: '', description: '', category: '', priority: 'medium',
-    locType: kind === 'issue' || !user.apartmentId ? 'common' : 'apartment', locValue: kind === 'issue' || !user.apartmentId ? '' : aptNo(user.apartmentId), tower: 'A', floor: '1',
+    locType: kind === 'issue' || !user.apartmentId ? 'common' : 'apartment', locValue: kind === 'issue' || !user.apartmentId ? '' : aptNo(user.apartmentId), tower: '', floor: '1',
     contactMethod: 'app', contactWindow: 'Anytime', preferredDate: isoDay(Date.now() + 86400000)
   })
   const [media, setMedia] = useState([])
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }))
   const cats = kind === 'service' ? SERVICE_CATEGORIES : COMPLAINT_CATEGORIES
+  const tw = towers.includes(f.tower) ? f.tower : towers[0] || ''
   const submit = () => {
-    const location = f.locType === 'apartment' ? { type: 'apartment', value: f.locValue } : f.locType === 'floor' ? { type: 'floor', value: `Tower ${f.tower} · Floor ${f.floor}` } : f.locType === 'tower' ? { type: 'tower', value: `Tower ${f.tower}` } : { type: 'common', value: f.locValue || 'Common area' }
+    const location = f.locType === 'apartment' ? { type: 'apartment', value: f.locValue } : f.locType === 'floor' ? { type: 'floor', value: [tw && towerLabel(tw), Number(f.floor) === 0 ? 'Ground floor' : `Floor ${f.floor}`].filter(Boolean).join(' · ') } : f.locType === 'tower' ? { type: 'tower', value: towerLabel(tw) } : { type: 'common', value: f.locValue || 'Common area' }
     const c = act(() => createComplaint(user, {
       kind: kind === 'service' ? 'service' : 'complaint', title: f.title, description: f.description, category: f.category, priority: f.priority, location, media,
       contact: { method: f.contactMethod, value: f.contactMethod === 'app' ? '' : user.phone, window: f.contactWindow },
@@ -129,12 +133,12 @@ function NewComplaint() {
       <Field label="Description"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Describe the problem — when it started, how severe it is…" /></Field>
       <Field label="Photos / videos"><MediaPicker value={media} onChange={setMedia} /></Field>
       <Field label="Location">
-        <Tabs className="mb-2" value={f.locType} onChange={(v) => { set('locType', v); if (v === 'apartment') set('locValue', aptNo(user.apartmentId)); if (v === 'common') set('locValue', '') }} tabs={[...(user.apartmentId ? [{ value: 'apartment', label: 'My flat' }] : []), { value: 'floor', label: 'Floor' }, { value: 'tower', label: 'Tower' }, { value: 'common', label: 'Common' }]} />
+        <Tabs className="mb-2" value={f.locType} onChange={(v) => { set('locType', v); if (v === 'apartment') set('locValue', aptNo(user.apartmentId)); if (v === 'common') set('locValue', '') }} tabs={[...(user.apartmentId ? [{ value: 'apartment', label: 'My flat' }] : []), { value: 'floor', label: 'Floor' }, ...(towers.length ? [{ value: 'tower', label: 'Tower' }] : []), { value: 'common', label: 'Common' }]} />
         {f.locType === 'apartment' && <Input value={f.locValue} readOnly />}
         {(f.locType === 'floor' || f.locType === 'tower') && (
-          <div className="grid grid-cols-2 gap-2">
-            <Select value={f.tower} onChange={(e) => set('tower', e.target.value)}>{towers.map((t) => <option key={t.id} value={t.code}>{t.name}</option>)}</Select>
-            {f.locType === 'floor' && <Select value={f.floor} onChange={(e) => set('floor', e.target.value)}>{[0, 1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n === 0 ? 'Ground' : `Floor ${n}`}</option>)}</Select>}
+          <div className={cls('grid gap-2', towers.length > 0 && f.locType === 'floor' ? 'grid-cols-2' : 'grid-cols-1')}>
+            {towers.length > 0 && <Select value={tw} onChange={(e) => set('tower', e.target.value)}>{towers.map((t) => <option key={t} value={t}>{towerLabel(t)}</option>)}</Select>}
+            {f.locType === 'floor' && <Select value={f.floor} onChange={(e) => set('floor', e.target.value)}>{(floors.length ? floors : [0, 1, 2, 3, 4, 5, 6]).map((n) => <option key={n} value={n}>{n === 0 ? 'Ground' : `Floor ${n}`}</option>)}</Select>}
           </div>
         )}
         {f.locType === 'common' && <Input value={f.locValue} onChange={(e) => set('locValue', e.target.value)} placeholder="e.g. Clubhouse gym, Basement P2, Garden" />}

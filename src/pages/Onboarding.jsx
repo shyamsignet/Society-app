@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Building2, CheckCircle2, Clock, LogOut, Plus, RefreshCw, Trash2, Users, Wallet, Dumbbell, ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button, Card, Field, Input, Select, Tabs, Toggle, useToast } from '../components/ui'
+import FlatPicker from '../components/FlatPicker'
 import { Hero } from './Login'
 import { useAuth } from '../lib/auth'
 import { api } from '../lib/cloud'
@@ -63,7 +64,7 @@ function Join({ onBack, onDone }) {
   const toast = useToast()
   const [code, setCode] = useState(DEFAULT_SOCIETY)
   const [dir, setDir] = useState(null)
-  const [f, setF] = useState({ name: '', email: '', tower: '', apartmentId: '', occupancy: 'owner' })
+  const [f, setF] = useState({ name: '', email: '', apartmentId: '', occupancy: 'owner' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const find = async (c = code) => {
@@ -71,11 +72,10 @@ function Join({ onBack, onDone }) {
     try {
       const d = await api.societyDirectory(c.trim().toLowerCase())
       if (!d?.society) throw new Error('No society found with that code.')
-      setDir(d); setF((x) => ({ ...x, tower: d.towers[0]?.code || '' }))
+      setDir(d)
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
   useEffect(() => { if (DEFAULT_SOCIETY) find(DEFAULT_SOCIETY) }, [])
-  const flats = (dir?.apartments || []).filter((a) => !f.tower || a.tower === f.tower).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
   const submit = async () => {
     setErr(''); setBusy(true)
     try {
@@ -98,10 +98,7 @@ function Join({ onBack, onDone }) {
         <>
           <p className="text-sm text-ink-500 mb-4"><b className="text-ink-900">{dir.society.name}</b>{dir.society.city && ` · ${dir.society.city}`}</p>
           <Field label="Full name"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="As per sale deed / rent agreement" /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Tower"><Select value={f.tower} onChange={(e) => setF({ ...f, tower: e.target.value, apartmentId: '' })}>{dir.towers.map((t) => <option key={t.code} value={t.code}>{t.name}</option>)}</Select></Field>
-            <Field label="Flat"><Select value={f.apartmentId} onChange={(e) => setF({ ...f, apartmentId: e.target.value })}><option value="">Select</option>{flats.map((a) => <option key={a.id} value={a.id}>{a.number}</option>)}</Select></Field>
-          </div>
+          <FlatPicker apartments={dir.apartments || []} value={f.apartmentId} onChange={(id) => setF((x) => ({ ...x, apartmentId: id }))} />
           <Field label="I am the"><Tabs tabs={[{ value: 'owner', label: 'Owner' }, { value: 'tenant', label: 'Tenant' }]} value={f.occupancy} onChange={(v) => setF({ ...f, occupancy: v })} /></Field>
           <Field label="Email (optional)"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
           {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
@@ -141,13 +138,14 @@ function Setup({ onBack }) {
     return generateFlats(towers, numbering).map((a) => { const id = newFlatId(a.number, taken); taken.add(id); return { id, ...a } })
   }, [towers, skipFlats, numbering])
   const dupNumbers = new Set(apartments.map((a) => a.number)).size !== apartments.length
-  const dupTowers = new Set(towers.map((t) => t.code.trim().toUpperCase())).size !== towers.length || towers.some((t) => !t.code.trim())
+  // one building may have no tower name; several buildings each need a distinct name
+  const dupTowers = towers.length > 1 && (new Set(towers.map((t) => t.code.trim().toUpperCase())).size !== towers.length || towers.some((t) => !t.code.trim()))
 
   const steps = ['Society', 'Towers & flats', 'You', 'Maintenance & amenities']
   const next = () => {
     setErr('')
     if (step === 0 && (!s.name.trim() || !/^[a-z0-9][a-z0-9_-]{2,39}$/.test(s.code))) return setErr(!s.name.trim() ? 'Enter the society name.' : 'Society code: 3–40 lowercase letters, numbers or dashes.')
-    if (step === 1 && !skipFlats && (!apartments.length || dupTowers)) return setErr('Check the towers: each tower needs a unique code, floors and flats per floor.')
+    if (step === 1 && !skipFlats && (!apartments.length || dupTowers)) return setErr('Check the towers: each tower needs a unique name, floors and flats per floor. (A single building can leave the name empty.)')
     if (step === 1 && !skipFlats && dupNumbers) return setErr('Some flat numbers repeat across towers. Choose a numbering style that includes the tower, e.g. A-101.')
     if (step === 2 && !me.name.trim()) return setErr('Enter your name.')
     setStep(step + 1)
@@ -164,7 +162,7 @@ function Setup({ onBack }) {
           prefs: { announcements: true, payments: true, complaints: true, visitors: true, bookings: true, events: true, social: true, marketplace: true, push: false, email: false, sms: false } })
       await enter(code)
       const now = new Date().toISOString()
-      const towerRows = [...new Set(apartments.map((a) => a.tower))].map((c) => ({ id: 'tw_' + c, code: c, name: towerLabel(c), floors: Math.max(...apartments.filter((a) => a.tower === c).map((a) => a.floor)) }))
+      const towerRows = [...new Set(apartments.map((a) => a.tower))].filter(Boolean).map((c) => ({ id: 'tw_' + c, code: c, name: towerLabel(c), floors: Math.max(...apartments.filter((a) => a.tower === c).map((a) => a.floor)) }))
       towerRows.forEach((t) => db.insert('towers', t))
       apartments.forEach((a) => db.insert('apartments', { ...a, createdAt: now }))
       db.insert('settings', { id: 'billing', value: {
@@ -219,7 +217,7 @@ function Setup({ onBack }) {
               {!skipFlats && towers.map((t, i) => (
                 <div key={i} className="rounded-2xl border border-ink-200 p-3 mb-3">
                   <div className="grid grid-cols-3 gap-2">
-                    <Field label="Tower / wing" className="mb-2"><Input value={t.code} maxLength={12} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, code: e.target.value.toUpperCase() } : x)))} /></Field>
+                    <Field label="Tower / wing" className="mb-2"><Input value={t.code} maxLength={12} placeholder={towers.length === 1 ? 'None' : ''} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, code: e.target.value.toUpperCase() } : x)))} /></Field>
                     <Field label="Floors" className="mb-2"><Input type="number" min={1} max={60} value={t.floors} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, floors: e.target.value } : x)))} /></Field>
                     <Field label="Flats / floor" className="mb-2"><Input type="number" min={1} max={30} value={t.perFloor} onChange={(e) => setTowers(towers.map((x, j) => (j === i ? { ...x, perFloor: e.target.value } : x)))} /></Field>
                   </div>
