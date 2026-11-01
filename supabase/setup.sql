@@ -268,10 +268,17 @@ begin
   when 'events' then
     if creating then return n ->> 'organizerId' = me and r <> 'security'; end if;
     if o ->> 'organizerId' = me or role_in(r, 'publish') then return true; end if;
-    return only_changed(o, n, array['rsvps','reminders','gallery'])
+    -- attendees: their own RSVP, reminder, photos, the expenses they paid and
+    -- payments between attendees that they made or received
+    return only_changed(o, n, array['rsvps','reminders','gallery','expenses','settlements'])
        and objs_delta_ok(o -> 'rsvps', n -> 'rsvps', me)
        and ids_delta_ok(o -> 'reminders', n -> 'reminders', me)
-       and objs_delta_ok(o -> 'gallery', n -> 'gallery', me);
+       and objs_delta_ok(o -> 'gallery', n -> 'gallery', me)
+       and objs_delta_ok(o -> 'expenses', n -> 'expenses', me)
+       and objs_delta_ok(o -> 'settlements', n -> 'settlements', me)
+       and not exists (select 1 from jsonb_array_elements(coalesce(n -> 'settlements', '[]'::jsonb)) x
+                       where not coalesce(o -> 'settlements', '[]'::jsonb) @> jsonb_build_array(x)
+                         and x ->> 'from' is distinct from me and x ->> 'to' is distinct from me);
 
   when 'polls' then
     if creating then return role_in(r, 'publish') and n ->> 'createdBy' = me and coalesce(jsonb_array_length(n -> 'votes'), 0) = 0; end if;

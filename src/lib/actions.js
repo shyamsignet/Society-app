@@ -6,6 +6,7 @@ import { can } from './rbac'
 import { translate } from '../i18n'
 import { uid, otp6, ymOf, monthLabel, fmtDateTime, fmtShort, inr } from './utils'
 import { cleanTower, normFlatNumber, flatKey, newFlatId, towerLabel } from './flats'
+import { headsOf } from './eventSplit'
 
 export class AppError extends Error {}
 const must = (cond, msg) => { if (!cond) throw new AppError(msg) }
@@ -476,16 +477,78 @@ export function createEvent(user, data) {
   guard(user, 'events.create')
   req(data.title, 'Title'); req(data.start, 'Start time'); req(data.venue, 'Venue')
   must(!data.end || new Date(data.end) > new Date(data.start), 'End time must be after start time.')
-  const e = db.insert('events', { id: uid('e_'), organizerId: user.id, rsvps: [{ userId: user.id, status: 'going', guests: 0 }], gallery: [], reminders: [], emoji: '🎉', ...data })
+  const e = db.insert('events', { id: uid('e_'), organizerId: user.id, rsvps: [{ userId: user.id, status: 'going', guests: 0, members: [] }], gallery: [], reminders: [], expenses: [], settlements: [], emoji: '🎉', ...data })
   notify('all', { type: 'events', title: `New event: ${e.title}`, body: `${fmtDateTime(e.start)} · ${e.venue}`, link: `/events/${e.id}` })
   return e
 }
-export function rsvpEvent(user, id, status, guests = 0) {
+// Everyone in my flat I could bring along: flatmates with their own login, and
+// family members listed on profiles (those without a login of their own).
+export function household(user) {
+  if (!user?.apartmentId) return []
+  const mates = db.list('users', (u) => u.apartmentId === user.apartmentId && u.id !== user.id && u.status === 'active')
+  const out = mates.map((u) => ({ id: u.id, name: u.name, userId: u.id, relation: u.familyOf === user.id ? 'Family' : '' }))
+  const seen = new Set(out.map((m) => m.name.trim().toLowerCase()))
+  for (const owner of [user, ...mates]) for (const f of owner.family || []) {
+    const key = (f.name || '').trim().toLowerCase()
+    if (!key || f.hasLogin || seen.has(key)) continue
+    seen.add(key)
+    out.push({ id: f.id, name: f.name, relation: f.relation || '' })
+  }
+  return out
+}
+
+// status: 'going' | 'maybe' | null (remove). members: household members coming with me.
+export function rsvpEvent(user, id, status, { guests = 0, members = [] } = {}) {
   const e = db.get('events', id)
+  must(e, 'Event not found.')
+  guests = Math.max(0, Math.min(50, Math.floor(Number(guests) || 0)))
+  members = status === 'going' ? members.map((m) => ({ id: m.id, name: m.name, ...(m.userId ? { userId: m.userId } : {}) })) : []
   const others = e.rsvps.filter((r) => r.userId !== user.id)
-  const going = others.filter((r) => r.status === 'going').reduce((a, r) => a + 1 + (r.guests || 0), 0)
-  if (status === 'going' && e.capacity) must(going + 1 + guests <= e.capacity, 'Sorry, this event is full.')
-  db.update('events', id, { rsvps: status ? [...others, { userId: user.id, status, guests }] : others })
+  const taken = others.filter((r) => r.status === 'going').reduce((a, r) => a + headsOf(r), 0)
+  if (status === 'going' && e.capacity) must(taken + 1 + members.length + guests <= e.capacity, `Sorry, only ${Math.max(0, e.capacity - taken)} place(s) left.`)
+  db.update('events', id, { rsvps: status ? [...others, { userId: user.id, status, guests: status === 'going' ? guests : 0, members }] : others })
+}
+
+// ---------- Event expenses (shared costs, split among attendees) ----------
+const eventAdmin = (user, e) => e.organizerId === user.id || can(user, 'announcement.publish')
+export function addEventExpense(user, id, { amount, title, receipt }) {
+  const e = db.get('events', id)
+  must(e, 'Event not found.')
+  const amt = Math.round(Number(amount) * 100) / 100
+  must(amt > 0 && amt <= 10000000, 'Enter the amount you paid.')
+  req(title, 'What was it for')
+  const x = { id: uid('ex_'), userId: user.id, amount: amt, title: String(title).trim().slice(0, 80), receipt: receipt || null, at: new Date().toISOString() }
+  db.update('events', id, { expenses: [...(e.expenses || []), x] })
+  const ids = e.rsvps.filter((r) => r.status === 'going' && r.userId !== user.id).map((r) => r.userId)
+  if (ids.length) notify(ids, { type: 'events', title: `${user.name} added ${inr(amt)} to ${e.title}`, body: x.title, link: `/events/${id}` })
+  return x
+}
+export function removeEventExpense(user, id, expId) {
+  const e = db.get('events', id)
+  const x = (e.expenses || []).find((y) => y.id === expId)
+  must(x, 'Expense not found.')
+  must(x.userId === user.id || eventAdmin(user, e), 'Only the person who added it or the organiser can remove it.')
+  db.update('events', id, { expenses: e.expenses.filter((y) => y.id !== expId) })
+}
+export function recordSettlement(user, id, { from, to, amount }) {
+  const e = db.get('events', id)
+  must(from === user.id || to === user.id, 'You can only record a payment you made or received.')
+  const amt = Math.round(Number(amount) * 100) / 100
+  must(amt > 0, 'Enter the amount.')
+  db.update('events', id, { settlements: [...(e.settlements || []), { id: uid('st_'), userId: user.id, from, to, amount: amt, at: new Date().toISOString() }] })
+  const other = from === user.id ? to : from
+  notify(other, { type: 'events', title: from === user.id ? `${user.name} paid you ${inr(amt)} for ${e.title}` : `${user.name} confirmed your payment of ${inr(amt)} for ${e.title}`, link: `/events/${id}` })
+}
+export function removeSettlement(user, id, stId) {
+  const e = db.get('events', id)
+  const s = (e.settlements || []).find((y) => y.id === stId)
+  must(s && (s.userId === user.id || eventAdmin(user, e)), 'Not allowed.')
+  db.update('events', id, { settlements: e.settlements.filter((y) => y.id !== stId) })
+}
+export function setEventSplit(user, id, split) {
+  const e = db.get('events', id)
+  must(eventAdmin(user, e), 'Only the organiser can change how costs are split.')
+  db.update('events', id, { split: split === 'family' ? 'family' : 'person' })
 }
 export function toggleReminder(user, id) {
   const e = db.get('events', id)

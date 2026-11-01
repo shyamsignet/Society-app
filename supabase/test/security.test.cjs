@@ -129,6 +129,16 @@ const recs = (res, col) => (res.r.records || []).filter((x) => x.c === col).map(
   ok('anyone can notify a neighbour', (await save(RES, 'notifications', 'n1', { userId: 'u_res2', title: 'Hi' })).ok)
   ok("cannot read others' notifications", recs(await rpc(RES, 'fetch_society', 'testsoc'), 'notifications').length === 0)
 
+  console.log('Events & shared expenses')
+  ok('committee creates an event', (await save(CHAIR, 'events', 'ev1', { title: 'Diwali', organizerId: 'u_chair', rsvps: [], gallery: [], reminders: [], expenses: [], settlements: [] })).ok)
+  ok('resident RSVPs with family members and guests', (await save(RES, 'events', 'ev1', { rsvps: [{ userId: 'u_res', status: 'going', guests: 1, members: [{ id: 'f1', name: 'Kid' }] }] })).ok)
+  ok('resident adds an expense they paid', (await save(RES, 'events', 'ev1', { expenses: [{ id: 'x1', userId: 'u_res', amount: 900, title: 'Sweets' }] })).ok)
+  ok('cannot add an expense in someone else\'s name', !(await save(FAM, 'events', 'ev1', { expenses: [{ id: 'x1', userId: 'u_res', amount: 900, title: 'Sweets' }, { id: 'x2', userId: 'u_res', amount: 5000, title: 'Fake' }] })).ok)
+  ok('cannot delete someone else\'s expense', !(await save(FAM, 'events', 'ev1', { expenses: [] })).ok)
+  ok('cannot record a payment between two other people', !(await save(FAM, 'events', 'ev1', { settlements: [{ id: 's1', userId: 'u_fam', from: 'u_res', to: 'u_chair', amount: 100 }] })).ok)
+  ok('can record a payment you made', (await save(FAM, 'events', 'ev1', { settlements: [{ id: 's2', userId: 'u_fam', from: 'u_fam', to: 'u_res', amount: 300 }] })).ok)
+  ok('organiser can remove a wrong expense', (await save(CHAIR, 'events', 'ev1', { expenses: [] })).ok)
+
   console.log('Sync & lockout')
   const s0 = (await rpc(RES2, 'fetch_society', 'testsoc')).r.seq
   await save(CHAIR, 'announcements', 'an3', { title: 'New', body: 'x', readBy: [], ackBy: [] })
