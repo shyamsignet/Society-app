@@ -41,6 +41,8 @@ function CloudLogin() {
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // Supabase sends 6–10 digit codes depending on the project's "OTP length" setting.
+  const codeOk = code.length >= 6 && code.length <= 10
   const valid = mode === 'phone' ? id.replace(/\D/g, '').length === 10 : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(id.trim())
   const send = async () => {
     setErr('')
@@ -79,9 +81,9 @@ function CloudLogin() {
               <h2 className="text-lg font-bold">Enter verification code</h2>
               <p className="text-sm text-ink-500 mb-5">{mode === 'phone' ? `Sent to +91 ${id}` : `Sent to ${id}`}</p>
               <Field error={err}>
-                <Input autoFocus inputMode="numeric" maxLength={6} placeholder="• • • • • •" className="text-center tracking-[0.6em] text-xl font-bold" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && verify()} />
+                <Input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={10} placeholder="• • • • • •" className="text-center tracking-[0.4em] text-xl font-bold" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && codeOk && verify()} />
               </Field>
-              <Button block size="lg" icon={ShieldCheck} loading={busy} onClick={verify} disabled={code.length !== 6}>Verify & continue</Button>
+              <Button block size="lg" icon={ShieldCheck} loading={busy} onClick={verify} disabled={!codeOk}>Verify & continue</Button>
               <button onClick={send} disabled={busy} className="w-full mt-4 text-sm font-semibold text-brand-600">Resend code</button>
             </>
           )}
