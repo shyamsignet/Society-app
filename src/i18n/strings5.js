@@ -371,4 +371,5 @@ export default [
   ['The app is read-only. Residents can still see everything, but nothing can be added or changed until the subscription is renewed.', 'ॲप फक्त वाचनासाठी आहे. रहिवासी सर्व काही पाहू शकतात, पण नूतनीकरण होईपर्यंत काहीही जोडता किंवा बदलता येणार नाही.', 'ऐप केवल पढ़ने के लिए है. निवासी सब कुछ देख सकते हैं, पर नवीनीकरण तक कुछ जोड़ा या बदला नहीं जा सकता.'],
   ['Try the demo with a sample society', 'नमुना सोसायटीसह डेमो पाहा', 'नमूना सोसाइटी के साथ डेमो देखें'],
   ['Demo with sample data – stored only on this device. Tap “Log out / switch demo account” in Profile to try another role.', 'नमुना माहितीसह डेमो – फक्त या डिव्हाइसवर साठवली जाते. दुसरी भूमिका पाहण्यासाठी प्रोफाइलमध्ये “लॉग आउट / डेमो खाते बदला” दाबा.', 'नमूना डेटा के साथ डेमो – केवल इस डिवाइस पर सेव. दूसरी भूमिका देखने के लिए प्रोफ़ाइल में “लॉग आउट / डेमो खाता बदलें” दबाएँ.'],
+  ['Back to the real SociYo app', 'खऱ्या SociYo ॲपवर परत जा', 'असली SociYo ऐप पर वापस जाएँ'],
 ]

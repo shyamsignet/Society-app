@@ -189,6 +189,7 @@ function DemoLogin() {
               ))}
             </div>
             <p className="text-center text-xs text-ink-400 mt-6">Demo with sample data – stored only on this device. Tap “Log out / switch demo account” in Profile to try another role.</p>
+            {window.location.pathname.includes('/demo/') && <a href="../" className="mt-4 flex items-center justify-center gap-2 h-12 rounded-2xl border border-brand-200 bg-white text-sm font-semibold text-brand-700"><ArrowLeft size={16} /> <span>Back to the real SociYo app</span></a>}
           </>
         )}
       </div>

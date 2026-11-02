@@ -99,6 +99,7 @@ export default function Profile() {
       <Card className="mt-3 divide-y divide-ink-100 overflow-hidden">
         <button onClick={async () => { if (await ask({ title: 'Log out?', ok: 'Log out' })) { logout(); nav('/') } }} className="w-full flex items-center gap-3 px-4 py-3.5 text-left font-semibold text-red-600"><LogOut size={18} /> {DEMO ? 'Log out / switch demo account' : 'Log out'}</button>
         {DEMO && <button onClick={async () => { if (await ask({ title: 'Reset demo data?', text: 'All changes on this device will be erased and the sample data restored.', ok: 'Reset', danger: true })) { await resetDB(); toast('Demo data restored') } }} className="w-full flex items-center gap-3 px-4 py-3.5 text-left font-semibold text-ink-500"><RotateCcw size={18} /> Reset demo data</button>}
+        {DEMO && window.location.pathname.includes('/demo/') && <a href="../" className="w-full flex items-center gap-3 px-4 py-3.5 text-left font-semibold text-brand-700"><HomeIcon size={18} /> <span>Back to the real SociYo app</span></a>}
       </Card>
       <p className="text-center text-[11px] text-ink-400 mt-5">SociYo · Made for {society.name}</p>
 
