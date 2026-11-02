@@ -89,6 +89,7 @@ function CloudLogin() {
             </>
           )}
         </Card>
+        <a href="./demo/" className="mt-4 flex items-center justify-center gap-2 h-12 rounded-2xl border border-brand-200 bg-white/70 text-sm font-semibold text-brand-700"><span>Try the demo with a sample society</span> <ArrowRight size={16} /></a>
       </div>
     </div>
   )
@@ -187,7 +188,7 @@ function DemoLogin() {
                 </button>
               ))}
             </div>
-            <p className="text-center text-xs text-ink-400 mt-6">Demo data is stored only on this device.</p>
+            <p className="text-center text-xs text-ink-400 mt-6">Demo with sample data – stored only on this device. Tap “Log out / switch demo account” in Profile to try another role.</p>
           </>
         )}
       </div>

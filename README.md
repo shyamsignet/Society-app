@@ -2,7 +2,8 @@
 
 **Your society, sorted.** · सोसायटी, सोपी. · सोसाइटी, आसान.
 
-**Live app:** https://shyamsignet.github.io/Society-app/
+**Live app:** https://shyamsignet.github.io/Society-app/  
+**Demo for customers (sample society, no login needed):** https://shyamsignet.github.io/Society-app/demo/
 
 SociYo is a mobile-first, installable web app (PWA) for apartment community management:
 announcements, community feed, maintenance payments, complaints, visitors & gate

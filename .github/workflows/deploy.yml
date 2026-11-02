@@ -57,6 +57,13 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
           VITE_SOCIETY_CODE: ${{ vars.SOCIETY_CODE }}
           VITE_SOCIETY_NAME: ${{ vars.SOCIETY_NAME }}
+      # Sample-society demo for sales meetings, served from /demo/ (no backend, data stays on the phone)
+      - run: npx vite build --outDir dist/demo
+        env:
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
+          VITE_SOCIETY_CODE: ''
+          VITE_SOCIETY_NAME: ''
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

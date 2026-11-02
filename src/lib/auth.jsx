@@ -4,7 +4,8 @@ import { setSessionUser, runReminders } from './actions'
 import { CLOUD } from './config'
 import { api, getSession, signOut, supabase } from './cloud'
 
-const KEY = 'smart-society-session'
+// demo and society mode can live on the same site (/demo/), so they keep separate sessions
+const KEY = CLOUD ? 'smart-society-session' : 'smart-society-demo-session'
 const SOC_KEY = 'smart-society-last-society'
 const AuthCtx = createContext(null)
 const store = {
