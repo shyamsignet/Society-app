@@ -505,7 +505,24 @@ export function decideBooking(user, id, approve, reason = '') {
   db.update('bookings', id, { status: approve ? 'confirmed' : 'rejected', decidedBy: user.id, reason })
   notify(b.userId, { type: 'bookings', title: approve ? `Booking approved: ${f.name}` : `Booking declined: ${f.name}`, body: approve ? fmtDateTime(b.start) : reason || 'Please contact the office.', link: '/facilities' })
 }
-export function saveFacility(user, id, patch) { guard(user, 'facilities.manage'); return db.update('facilities', id, patch) }
+export function saveFacility(user, id, patch) {
+  guard(user, 'facilities.manage')
+  const f = { ...(id ? db.get('facilities', id) : {}), ...patch }
+  if ('name' in patch) req(patch.name, 'Name')
+  const slot = Number(f.slotHours) || 1
+  if (slot !== 24 && ('open' in patch || 'close' in patch || 'slotHours' in patch)) must(Number(f.open) + slot <= Number(f.close), 'Opening hours are shorter than one slot.')
+  if ('charge' in patch) must(Number(patch.charge) >= 0, 'Charge cannot be negative.')
+  if ('capacity' in patch) must(Number(patch.capacity) >= 1, 'Capacity must be at least 1.')
+  const clean = { ...patch, ...('name' in patch ? { name: String(patch.name).trim() } : {}), ...('slotHours' in patch ? { chargeUnit: slot === 24 ? 'day' : 'slot' } : {}) }
+  if (!id) return db.insert('facilities', { id: 'fa_' + uid(), active: true, rules: [], color: '#6A4669', chargeUnit: slot === 24 ? 'day' : 'slot', ...clean })
+  return db.update('facilities', id, clean)
+}
+// "Remove" hides a facility from residents but keeps its booking history (restorable).
+export function removeFacility(user, id, removed = true) {
+  guard(user, 'facilities.manage')
+  if (removed) must(!activeBookings(id).some((b) => new Date(b.end) > new Date()), 'This facility has upcoming bookings. Cancel or wait for them first, or just close it for booking.')
+  return db.update('facilities', id, removed ? { archived: true, active: false } : { archived: false, active: true })
+}
 
 // ---------- Marketplace ----------
 export const LISTING_TYPES = { sell: 'For Sale', rent: 'For Rent', service: 'Service', free: 'Free', wanted: 'Wanted' }

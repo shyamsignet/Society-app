@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, X, EyeOff, Trash2, RotateCcw, ShieldCheck, ClipboardList, Download, Plus } from 'lucide-react'
-import { Page, Card, Tabs, Chips, Button, Empty, Toggle, Sheet, Field, Input, Textarea, Select, Stat, Badge, useAction } from '../../components/ui'
+import { Page, Card, Tabs, Chips, Button, Empty, Toggle, Sheet, Field, Input, Textarea, Select, Stat, Badge, useAction, useConfirm } from '../../components/ui'
+import { FACILITY_CATALOGUE, hourLabel } from '../../lib/facilities'
 import { ComplaintRow } from '../Complaints'
 import { BookingBadge } from '../Facilities'
 import { VisitorRow } from '../Visitors'
@@ -9,7 +10,7 @@ import PostCard from '../../components/PostCard'
 import { useAuth } from '../../lib/auth'
 import { useData, db } from '../../lib/db'
 import { can } from '../../lib/rbac'
-import { isOverdue, decideBooking, saveFacility, moderatePost, aptNo, userById, VISITOR_TYPES, updateListing } from '../../lib/actions'
+import { isOverdue, decideBooking, saveFacility, removeFacility, moderatePost, aptNo, userById, VISITOR_TYPES, updateListing } from '../../lib/actions'
 import { fmtDateTime, fmtTime, inr, sameDay, downloadCSV, timeAgo, uid } from '../../lib/utils'
 
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0)
@@ -61,7 +62,6 @@ export function AdminBookings() {
       {children}
     </Card>
   )
-  const f = edit && facilities.find((x) => x.id === edit)
   return (
     <Page title="Facilities & bookings" back="/admin">
       <Tabs className="mt-1" value={tab} onChange={setTab} tabs={[{ value: 'pending', label: `Approvals (${pending.length})`, count: pending.length }, { value: 'upcoming', label: 'Upcoming' }, { value: 'facilities', label: 'Facilities' }]} />
@@ -76,31 +76,32 @@ export function AdminBookings() {
         ))}
         {tab === 'pending' && !pending.length && <Empty icon={Check} title="No pending approvals" />}
         {tab === 'upcoming' && upcoming.map((b) => <Row key={b.id} b={b} />)}
-        {tab === 'facilities' && facilities.map((x) => (
+        {tab === 'facilities' && <Button block variant="secondary" icon={Plus} onClick={() => setEdit('new')}>Add facility</Button>}
+        {tab === 'facilities' && facilities.filter((x) => !x.archived).map((x) => (
           <Card key={x.id} className="p-4 flex items-center gap-3" onClick={() => setEdit(x.id)}>
             <span className="text-2xl">{x.emoji}</span>
-            <div className="flex-1"><div className="font-bold">{x.name}</div><div className="text-xs text-ink-500">{x.charge ? inr(x.charge) : 'Free'} · {x.requiresApproval ? 'Approval required' : 'Instant booking'} · {bookings.filter((b) => b.facilityId === x.id && b.status === 'confirmed').length} bookings</div></div>
+            <div className="flex-1 min-w-0"><div className="font-bold">{x.name}</div><div className="text-xs text-ink-500">{x.slotHours === 24 ? 'Full day' : `${x.slotHours}h slots · ${hourLabel(x.open)}–${hourLabel(x.close)}`} · {x.charge ? inr(x.charge) : 'Free'} · {x.requiresApproval ? 'Approval' : 'Instant'}</div></div>
             {x.active ? <Badge color="green">Open</Badge> : <Badge color="red">Closed</Badge>}
           </Card>
         ))}
-        {tab === 'facilities' && <NewFacility />}
+        {tab === 'facilities' && !facilities.some((x) => !x.archived) && <Empty title="No facilities yet" text="Add the clubhouse, gym, hall… that residents can book." />}
+        {tab === 'facilities' && facilities.some((x) => x.archived) && (
+          <>
+            <div className="text-xs font-bold text-ink-400 uppercase tracking-wider pt-2">Removed</div>
+            {facilities.filter((x) => x.archived).map((x) => (
+              <Card key={x.id} className="p-3 flex items-center gap-3 opacity-70">
+                <span className="text-xl">{x.emoji}</span><div className="flex-1 font-semibold text-sm">{x.name}</div>
+                <Button size="sm" variant="secondary" icon={RotateCcw} onClick={() => act(() => removeFacility(user, x.id, false), `${x.name} restored`)}>Restore</Button>
+              </Card>
+            ))}
+          </>
+        )}
       </div>
       <Sheet open={!!reject} onClose={() => setReject(null)} title="Decline booking">
         <Field label="Reason (shared with resident)"><Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Hall reserved for society AGM" /></Field>
         <Button variant="dangerSolid" block onClick={() => { act(() => decideBooking(user, reject, false, reason), 'Booking declined'); setReject(null) }}>Decline booking</Button>
       </Sheet>
-      <Sheet open={!!f} onClose={() => setEdit(null)} title={f ? `${f.emoji} ${f.name}` : ''}>
-        {f && (
-          <>
-            <div className="divide-y divide-ink-100">
-              <Toggle checked={f.active} onChange={(v) => act(() => saveFacility(user, f.id, { active: v }), v ? 'Facility opened' : 'Facility closed for booking')} label="Open for booking" desc="Close temporarily for maintenance" />
-              <Toggle checked={f.requiresApproval} onChange={(v) => act(() => saveFacility(user, f.id, { requiresApproval: v }), 'Updated')} label="Require committee approval" />
-            </div>
-            <Field label="Charge per slot (₹)" className="mt-3"><Input type="number" min={0} defaultValue={f.charge} onBlur={(e) => act(() => saveFacility(user, f.id, { charge: Number(e.target.value) || 0 }), 'Charge updated')} /></Field>
-            <Field label="Rules (one per line)"><Textarea rows={4} defaultValue={f.rules.join('\n')} onBlur={(e) => act(() => saveFacility(user, f.id, { rules: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) }), 'Rules updated')} /></Field>
-          </>
-        )}
-      </Sheet>
+      <FacilitySheet id={edit} onClose={() => setEdit(null)} />
     </Page>
   )
 }
@@ -162,36 +163,68 @@ export function AdminVisitors() {
   )
 }
 
-function NewFacility() {
-  const act = useAction()
+function FacilitySheet({ id, onClose }) {
   const { user } = useAuth()
-  const [f, setF] = useState({ name: '', emoji: '🏟️', slotHours: 1, open: 6, close: 22, charge: 0, capacity: 20, requiresApproval: false })
+  const act = useAction()
+  const ask = useConfirm()
+  const facilities = useData((d) => d.list('facilities'))
+  const existing = id && id !== 'new' ? facilities.find((x) => x.id === id) : null
+  const blank = { type: '', name: '', emoji: '🏟️', slotHours: 1, open: 6, close: 22, charge: 0, capacity: 20, requiresApproval: false, active: true, rules: '' }
+  const [f, setF] = useState(blank)
+  const [forId, setForId] = useState(null)
+  if (id !== forId) { setForId(id); setF(existing ? { ...existing, rules: (existing.rules || []).join('\n') } : blank) }
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? Number(e.target.value) : e.target.value })
-  const add = () => act(() => {
-    if (!can(user, 'facilities.manage')) throw new Error('Not allowed')
-    if (!f.name.trim()) throw new Error('Enter a name.')
-    if (f.slotHours !== 24 && f.open + f.slotHours > f.close) throw new Error('Opening hours are shorter than one slot.')
-    db.insert('facilities', { id: 'fa_' + uid(), ...f, name: f.name.trim(), chargeUnit: f.slotHours === 24 ? 'day' : 'slot', active: true, rules: [], color: '#0EA5E9' })
-    setF({ ...f, name: '' })
-  }, 'Facility added')
+  const have = new Set(facilities.filter((x) => !x.archived).map((x) => x.name.toLowerCase()))
+  const pick = (name) => {
+    const c = FACILITY_CATALOGUE.find((x) => x.name === name)
+    setF(c ? { ...f, ...c, type: name } : { ...blank, type: name, name: '' })
+  }
+  const save = () => {
+    const data = { name: f.name, emoji: f.emoji || '🏟️', slotHours: Number(f.slotHours), open: Number(f.open), close: Number(f.slotHours) === 24 ? Number(f.open) : Number(f.close), charge: Number(f.charge) || 0, capacity: Number(f.capacity) || 1, requiresApproval: !!f.requiresApproval, active: !!f.active, rules: String(f.rules || '').split('\n').map((x) => x.trim()).filter(Boolean) }
+    if (act(() => saveFacility(user, existing?.id || null, data), existing ? 'Facility updated' : `${data.name} added – residents can book it now`)) onClose()
+  }
+  const remove = async () => {
+    if (await ask({ title: `Remove ${existing.name}?`, text: 'Residents will no longer see it. Its booking history is kept and you can restore it later.', ok: 'Remove', danger: true })) {
+      if (act(() => removeFacility(user, existing.id, true), `${existing.name} removed`)) onClose()
+    }
+  }
+  const hours = Array.from({ length: 25 }, (_, h) => h)
   return (
-    <Card className="p-4">
-      <div className="font-bold text-sm mb-3">Add a facility</div>
-      <div className="grid grid-cols-[64px_1fr] gap-3">
-        <Field label="Icon"><Input value={f.emoji} maxLength={4} onChange={set('emoji')} className="text-center text-xl" /></Field>
-        <Field label="Name"><Input value={f.name} onChange={set('name')} placeholder="e.g. Table Tennis Room" /></Field>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Slot (hours)"><Select value={f.slotHours} onChange={set('slotHours', true)}>{[1, 2, 3, 4, 24].map((h) => <option key={h} value={h}>{h === 24 ? 'Full day' : h}</option>)}</Select></Field>
-        <Field label="Opens"><Input type="number" min={0} max={23} value={f.open} onChange={set('open', true)} /></Field>
-        <Field label="Closes"><Input type="number" min={1} max={24} value={f.close} onChange={set('close', true)} /></Field>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Charge (₹)"><Input type="number" min={0} value={f.charge} onChange={set('charge', true)} /></Field>
-        <Field label="Capacity"><Input type="number" min={1} value={f.capacity} onChange={set('capacity', true)} /></Field>
-      </div>
-      <Toggle checked={f.requiresApproval} onChange={(v) => setF({ ...f, requiresApproval: v })} label="Require committee approval" />
-      <Button block icon={Plus} className="mt-2" onClick={add}>Add facility</Button>
-    </Card>
+    <Sheet open={!!id} onClose={onClose} title={existing ? `${existing.emoji} ${existing.name}` : 'Add a facility'} footer={<Button block onClick={save} disabled={!String(f.name || '').trim()}>{existing ? 'Save changes' : 'Add facility'}</Button>}>
+      {!existing && (
+        <Field label="Choose facility" hint="Fills in typical hours and charges – change anything below">
+          <Select value={f.type} onChange={(e) => pick(e.target.value)}>
+            <option value="">Select…</option>
+            {FACILITY_CATALOGUE.map((c) => <option key={c.name} value={c.name} disabled={have.has(c.name.toLowerCase())}>{c.emoji} {c.name}{have.has(c.name.toLowerCase()) ? ' (added)' : ''}</option>)}
+            <option value="other">Other – type your own</option>
+          </Select>
+        </Field>
+      )}
+      {(existing || f.type) && (
+        <>
+          <div className="grid grid-cols-[72px_1fr] gap-3">
+            <Field label="Icon"><Input value={f.emoji} maxLength={4} onChange={set('emoji')} className="text-center text-xl" /></Field>
+            <Field label="Name"><Input value={f.name} onChange={set('name')} placeholder="e.g. Table Tennis Room" /></Field>
+          </div>
+          <Field label="Booking slot"><Select value={f.slotHours} onChange={set('slotHours', true)}>{[1, 2, 3, 4, 6, 24].map((h) => <option key={h} value={h}>{h === 24 ? 'Full day (24 h)' : `${h} hour${h > 1 ? 's' : ''}`}</option>)}</Select></Field>
+          {Number(f.slotHours) !== 24 && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Opens at"><Select value={f.open} onChange={set('open', true)}>{hours.slice(0, 24).map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}</Select></Field>
+              <Field label="Closes at"><Select value={f.close} onChange={set('close', true)}>{hours.slice(1).map((h) => <option key={h} value={h}>{h === 24 ? 'Midnight' : hourLabel(h)}</option>)}</Select></Field>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={Number(f.slotHours) === 24 ? 'Charge per day (₹)' : 'Charge per slot (₹)'}><Input type="number" inputMode="numeric" min={0} value={f.charge} onChange={set('charge', true)} /></Field>
+            <Field label="Capacity (people)"><Input type="number" inputMode="numeric" min={1} value={f.capacity} onChange={set('capacity', true)} /></Field>
+          </div>
+          <div className="divide-y divide-ink-100 border-y border-ink-100 mb-3">
+            <Toggle checked={!!f.requiresApproval} onChange={(v) => setF({ ...f, requiresApproval: v })} label="Require committee approval" desc="Otherwise bookings are confirmed instantly" />
+            <Toggle checked={!!f.active} onChange={(v) => setF({ ...f, active: v })} label="Open for booking" desc="Turn off to close it temporarily (maintenance, renovation…)" />
+          </div>
+          <Field label="Rules (one per line)"><Textarea rows={4} value={f.rules} onChange={set('rules')} placeholder={'e.g. No outside shoes\nChildren below 12 with an adult'} /></Field>
+          {existing && <Button variant="ghost" block icon={Trash2} className="text-red-600" onClick={remove}>Remove facility</Button>}
+        </>
+      )}
+    </Sheet>
   )
 }
