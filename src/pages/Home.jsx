@@ -37,7 +37,10 @@ export default function Home() {
   const waiting = useData((d) => d.list('visitors', (v) => v.apartmentId === user.apartmentId && v.status === 'pending'))
   const alerts = useData((d) => d.list('alerts', (a) => a.active))
   const counts = posts.reduce((m, p) => ({ ...m, [p.category]: (m[p.category] || 0) + 1 }), {})
-  const shown = cat === 'all' ? posts : posts.filter((p) => p.category === cat)
+  // Feed mixes community posts with active committee announcements, newest first.
+  const feedItems = [...posts.map((p) => ({ kind: 'post', item: p })), ...announcements.map((a) => ({ kind: 'notice', item: a }))]
+    .sort((x, y) => new Date(y.item.createdAt) - new Date(x.item.createdAt))
+  const shown = cat === 'all' ? feedItems : cat === 'notices' ? feedItems.filter((f) => f.kind === 'notice') : feedItems.filter((f) => f.kind === 'post' && f.item.category === cat)
   const total = dues.reduce((a, b) => a + billTotal(b), 0)
   const nextDue = dues.map((b) => b.dueDate).sort()[0]
   const overdue = dues.some((b) => billStatus(b) === 'overdue')
@@ -150,10 +153,10 @@ export default function Home() {
           <span className="flex-1 text-sm text-ink-400">Share something with your neighbours…</span>
           <ImagePlus size={20} className="text-accent-600" />
         </Card>
-        <Chips className="mb-3" value={cat} onChange={setCat} options={[{ value: 'all', label: 'All', count: posts.length }, ...POST_CATEGORIES.map((c) => ({ value: c.id, label: `${c.emoji} ${c.label}`, count: counts[c.id] || 0 }))]} />
+        <Chips className="mb-3" value={cat} onChange={setCat} options={[{ value: 'all', label: 'All', count: feedItems.length }, { value: 'notices', label: '📢 Notices', count: announcements.length }, ...POST_CATEGORIES.map((c) => ({ value: c.id, label: `${c.emoji} ${c.label}`, count: counts[c.id] || 0 }))]} />
         <div className="space-y-3">
-          {shown.map((p) => <PostCard key={p.id} post={p} />)}
-          {!shown.length && <Empty icon={AlertTriangle} title="No posts here yet" text="Be the first to post in this category." action={<Button onClick={() => nav(`/feed/new?cat=${cat}`)}>Create post</Button>} />}
+          {shown.map((f) => f.kind === 'notice' ? <AnnouncementCard key={'n' + f.item.id} a={f.item} feed /> : <PostCard key={f.item.id} post={f.item} />)}
+          {!shown.length && <Empty icon={AlertTriangle} title="No posts here yet" text="Be the first to post in this category." action={cat !== 'notices' && <Button onClick={() => nav(`/feed/new?cat=${cat === 'all' ? 'general' : cat}`)}>Create post</Button>} />}
         </div>
       </div>
     </div>
