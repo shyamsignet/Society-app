@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom'
-import { Plus, FileText, Image as ImageIcon, CheckCheck, Pin, Trash2, Megaphone, Download, Users, Share2, MessageCircle } from 'lucide-react'
+import { Plus, FileText, Image as ImageIcon, CheckCheck, Pin, Trash2, Megaphone, Download, Users, Share2 } from 'lucide-react'
 import { Page, Button, Card, Chips, Empty, Field, Input, Textarea, Tabs, Toggle, MediaPicker, Badge, Avatar, Sheet, Bar, useAction, useConfirm } from '../components/ui'
-import AnnouncementCard, { PRIORITY, announcementShareText } from '../components/AnnouncementCard'
+import AnnouncementCard, { PRIORITY, useShareAnnouncement } from '../components/AnnouncementCard'
 import { sortAnnouncements } from './Home'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { can } from '../lib/rbac'
 import { publishAnnouncement, markAnnouncementRead, acknowledgeAnnouncement, updateAnnouncement, deleteAnnouncement, isActiveAnnouncement, userById, aptNo } from '../lib/actions'
-import { fmtDateTime, fmtDate, isoDay, shareOnWhatsApp } from '../lib/utils'
+import { fmtDateTime, fmtDate, isoDay } from '../lib/utils'
 import { noticePdf, openDataUrl, saveBlob } from '../lib/pdf'
 
 export default function Announcements() {
@@ -64,10 +64,11 @@ function Detail() {
     if (att.url) return openDataUrl(att.url, att.name)
     saveBlob(noticePdf(society, a, author), att.name || 'notice.pdf')
   }
-  const share = () => shareOnWhatsApp(announcementShareText(a, society))
+  const shareAnn = useShareAnnouncement()
+  const share = () => shareAnn(a, society)
   return (
     <Page title="Announcement" back="/announcements" actions={<>
-      <Button size="sm" variant="ghost" icon={Share2} aria-label="Share on WhatsApp" onClick={share} />
+      <Button size="sm" variant="ghost" icon={Share2} aria-label="Share" onClick={share} />
       {admin && <Button size="sm" variant="ghost" icon={Trash2} onClick={async () => { if (await ask({ title: 'Delete announcement?', danger: true, ok: 'Delete' })) { act(() => deleteAnnouncement(user, a.id), 'Deleted'); nav('/announcements') } }} />}
     </>}>
       <div className="flex items-center gap-2 mt-2">
@@ -81,7 +82,7 @@ function Detail() {
         <div className="text-xs text-ink-500"><span className="font-semibold text-ink-700">{author?.name}</span> · {author?.role?.replace('_', ' ')}<br />{fmtDateTime(a.createdAt)}{a.expiresAt && ` · valid till ${fmtDate(a.expiresAt)}`}</div>
       </div>
       <Card className="p-5 mt-4"><p className="text-[15px] leading-relaxed text-ink-700 whitespace-pre-line">{a.body}</p></Card>
-      <Button block variant="success" className="mt-3" icon={MessageCircle} onClick={share}>Share on WhatsApp</Button>
+      <Button block variant="secondary" className="mt-3" icon={Share2} onClick={share}>Share</Button>
 
       {a.attachments?.length > 0 && (
         <>
