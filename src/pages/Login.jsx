@@ -18,9 +18,9 @@ export default function Login() {
 
 export function Hero({ title, sub, emoji }) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-[#0a1a2e] text-white px-6 pt-16 pb-24 safe-top">
-      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent-500/20 blur-2xl" />
-      <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-sky-400/10 blur-2xl" />
+    <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-[#1C0E1B] text-white px-6 pt-16 pb-24 safe-top">
+      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-coral-500/25 blur-2xl" />
+      <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-brand-200/10 blur-2xl" />
       <div className="relative flex justify-end -mt-8 mb-6"><LanguageSwitcher dark /></div>
       <div className="relative">
         {emoji
@@ -134,9 +134,9 @@ function DemoLogin() {
 
   return (
     <div className="min-h-full flex flex-col">
-      <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-[#0a1a2e] text-white px-6 pt-16 pb-24 safe-top">
-        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent-500/20 blur-2xl" />
-        <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-sky-400/10 blur-2xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-[#1C0E1B] text-white px-6 pt-16 pb-24 safe-top">
+        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-coral-500/25 blur-2xl" />
+        <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-brand-200/10 blur-2xl" />
         <div className="relative flex justify-end -mt-8 mb-6"><LanguageSwitcher dark /></div>
         <div className="relative">
           <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur grid place-items-center text-3xl mb-5">{society?.logoEmoji}</div>

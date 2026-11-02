@@ -60,7 +60,7 @@ export const initials = (name = '') =>
 export const otp6 = () => String(Math.floor(100000 + Math.random() * 900000))
 
 // Decorative offline-safe images (SVG data URIs) for sample content
-export const artImage = (emoji, from = '#13254A', to = '#22C55E', label = '') => {
+export const artImage = (emoji, from = '#3B1F3A', to = '#22C55E', label = '') => {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='500' viewBox='0 0 800 500'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${from}'/><stop offset='1' stop-color='${to}'/></linearGradient></defs><rect width='800' height='500' fill='url(#g)'/><circle cx='680' cy='80' r='140' fill='white' fill-opacity='.08'/><circle cx='90' cy='450' r='180' fill='white' fill-opacity='.07'/><text x='400' y='${label ? 265 : 290}' font-size='170' text-anchor='middle'>${emoji}</text>${label ? `<text x='400' y='400' font-family='Helvetica,Arial' font-weight='700' font-size='40' fill='white' text-anchor='middle'>${label}</text>` : ''}</svg>`
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
 }

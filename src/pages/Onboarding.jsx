@@ -24,7 +24,7 @@ export default function Onboarding() {
   const rejected = regs?.find((r) => r.status === 'rejected')
   return (
     <div className="min-h-full flex flex-col">
-      <Hero title="Welcome to Sociyo" sub="Let’s connect you to your society" />
+      <Hero title="Welcome to SociYo" sub="Let’s connect you to your society" />
       <div className="flex-1 -mt-14 px-4 pb-10 relative space-y-3">
         {pendingReg ? (
           <Card className="p-5 text-center">
@@ -38,7 +38,7 @@ export default function Onboarding() {
             {rejected && <Card className="p-4 text-sm text-red-700 bg-red-50">Your earlier request to join {rejected.societyName} was not approved. Please contact the society office.</Card>}
             <Card className="p-5">
               <h2 className="text-lg font-bold">You’re not linked to a society yet</h2>
-              <p className="text-sm text-ink-500 mt-1">If your society already uses Sociyo, ask to join your flat. If you are setting it up for your committee, create the society.</p>
+              <p className="text-sm text-ink-500 mt-1">If your society already uses SociYo, ask to join your flat. If you are setting it up for your committee, create the society.</p>
               <div className="grid gap-3 mt-5">
                 <button onClick={() => setView('join')} className="text-left p-4 rounded-2xl border-2 border-ink-200 hover:border-brand-500 flex items-center gap-3">
                   <span className="h-11 w-11 rounded-xl bg-brand-50 text-brand-700 grid place-items-center"><Users size={20} /></span>

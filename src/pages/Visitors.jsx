@@ -97,7 +97,7 @@ export function PassSheet({ v, onClose }) {
   const { society } = useAuth()
   const toast = useToast()
   const [qr, setQr] = useState('')
-  useEffect(() => { if (v) QRCode.toDataURL(`SSV:${v.id}:${v.otp}`, { width: 520, margin: 1, color: { dark: '#13254A' } }).then(setQr) }, [v?.id])
+  useEffect(() => { if (v) QRCode.toDataURL(`SSV:${v.id}:${v.otp}`, { width: 520, margin: 1, color: { dark: '#3B1F3A' } }).then(setQr) }, [v?.id])
   if (!v) return null
   const text = `Hi ${v.name.split(' ')[0]}! You're invited to ${society.name}, flat ${aptNo(v.apartmentId)}.\n📅 ${fmtDateTime(v.expectedAt)}\n🔐 Entry code: ${v.otp}\nShow this code (or the QR) to security at the main gate.\n📍 ${society.address}`
   const share = async () => {

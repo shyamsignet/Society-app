@@ -25,7 +25,7 @@ export default function PostCard({ post, full }) {
 
   const like = () => { act(() => toggleLike(user, post.id)); if (!liked) { setPop(true); setTimeout(() => setPop(false), 400) } }
   const share = async () => {
-    const r = await shareText({ title: society.name || 'Sociyo', text: `${author?.name}: ${post.text}` })
+    const r = await shareText({ title: society.name || 'SociYo', text: `${author?.name}: ${post.text}` })
     if (r === 'copied') toast('Post copied to clipboard')
   }
   const remove = async () => {

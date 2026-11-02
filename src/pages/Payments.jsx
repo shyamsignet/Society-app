@@ -52,7 +52,7 @@ function Dashboard() {
   return (
     <Page title="Maintenance" subtitle={aptNo(user.apartmentId)} back actions={can(user, 'billing.manage') && <Button size="sm" variant="secondary" onClick={() => nav('/admin/billing')}>Admin</Button>}>
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 to-brand-900 text-white p-5 mt-2 shadow-float">
-        <div className="absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-accent-500/20 blur-xl" />
+        <div className="absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-coral-500/25 blur-xl" />
         <div className="relative">
           <div className="flex items-center justify-between">
             <span className="text-sm text-brand-200">Outstanding amount</span>
@@ -308,7 +308,7 @@ export function receiptPdf(society, p) {
   const bills = p.billIds.map((id) => db.get('bills', id)).filter(Boolean)
   const payer = userById(p.userId)
   return makePdf((d) => {
-    d.rect(0, 0, 595, 110, '#13254A')
+    d.rect(0, 0, 595, 110, '#3B1F3A')
     d.text(40, 48, society.name, { size: 22, bold: true, color: '#FFFFFF' })
     d.text(40, 70, society.address, { size: 9, color: '#B3C2E3' })
     d.text(40, 86, `Reg. No. ${society.regNo}`, { size: 9, color: '#B3C2E3' })
@@ -328,7 +328,7 @@ export function receiptPdf(society, p) {
     })
     d.line(40, y, 555, y, '#CBD5E1')
     d.text(50, y + 24, 'Total paid', { size: 13, bold: true }); d.text(545, y + 24, inr(p.amount), { size: 13, bold: true, align: 'right' })
-    d.text(40, y + 80, 'This is a computer-generated receipt and does not require a signature. Issued via Sociyo.', { size: 9, color: '#64748B' })
+    d.text(40, y + 80, 'This is a computer-generated receipt and does not require a signature. Issued via SociYo.', { size: 9, color: '#64748B' })
     d.text(40, y + 96, 'Thank you for your timely payment!', { size: 9, color: '#64748B' })
   })
 }

@@ -1,10 +1,10 @@
-# Sociyo
+# SociYo
 
 **Your society, sorted.** · सोसायटी, सोपी. · सोसाइटी, आसान.
 
 **Live app:** https://shyamsignet.github.io/Society-app/
 
-Sociyo is a mobile-first, installable web app (PWA) for apartment community management:
+SociYo is a mobile-first, installable web app (PWA) for apartment community management:
 announcements, community feed, maintenance payments, complaints, visitors & gate
 security, facility booking, marketplace, events, polls, emergency help and a
 role-based admin dashboard.
@@ -79,11 +79,13 @@ Manager · Security Guard · Resident — permissions are defined in one place,
 (`src/lib/actions.js`).
 
 ### Brand
-- Name **Sociyo** (Marathi सोसायो, Hindi सोसाइयो); the wordmark on the login hero stays in Latin letters.
+- Name **SociYo** (capital S and Y; Marathi सोसायो, Hindi सोसाइयो); the wordmark stays in Latin letters.
 - Taglines: *Your society, sorted.* · *सोसायटी, सोपी.* · *सोसाइटी, आसान.*
-- Icon: a rounded "S" made of two facing building outlines with a heart in the gap –
-  navy `#13254A`, green `#22C55E`. Source: `public/favicon.svg` and `src/components/Logo.jsx`
-  (PNG app icons in `public/` are rendered from the same artwork).
+- Logo: three buildings with the residents in front and a coral arc; in the wordmark the dot of
+  the i is a coral leaf. Files: [`docs/brand/`](docs/brand/) (full logo, horizontal, app icon).
+- Colours: plum `#3B1F3A` / deep aubergine `#2A1529` (brand), lavender `#D6C8F0` (light tints),
+  burnt coral `#E8674A` (single accent), ivory `#F7F1E8`, charcoal `#2E2B2C`. Green stays only
+  for success states (paid, approved, going). Tokens live in `tailwind.config.js` (`brand`, `coral`).
 - "Palm Grove Residency" is only the demo's sample society, not the brand.
 - Printable A4 flyer for residents: [`docs/flyer/`](docs/flyer/) (see its README).
 

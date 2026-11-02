@@ -1,4 +1,4 @@
-# Sociyo resident flyer (A4)
+# SociYo resident flyer (A4)
 
 One-page flyer to print for the notice board / lifts or share on the society WhatsApp group.
 

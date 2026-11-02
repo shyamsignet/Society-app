@@ -166,7 +166,7 @@ function Book() {
               {f.charge > 0 && <div className="text-[11px] text-ink-500 mt-1">Payable at the society office before use.</div>}
             </div>
             <Field label="Purpose / note (optional)" className="mt-4"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Birthday party, practice session…" /></Field>
-            <label className="flex items-start gap-3 text-sm text-ink-700 mb-4"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="h-5 w-5 mt-0.5 accent-[#13254A]" /> I agree to follow the facility rules and take responsibility for any damage.</label>
+            <label className="flex items-start gap-3 text-sm text-ink-700 mb-4"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="h-5 w-5 mt-0.5 accent-[#3B1F3A]" /> I agree to follow the facility rules and take responsibility for any damage.</label>
             <Button block size="lg" variant="success" icon={CheckCircle2} disabled={!agree} onClick={confirm}>{f.requiresApproval ? 'Request booking' : 'Confirm booking'}</Button>
           </>
         )}

@@ -1,4 +1,4 @@
-# Going live with your society – Sociyo
+# Going live with your society – SociYo
 
 The app is published at **https://shyamsignet.github.io/Society-app/**.
 
@@ -41,19 +41,19 @@ until you add your own sender (SMTP).
 1. **Your own sender (SMTP).** The simplest free option is the society's Gmail
    (about 500 emails/day):
    - Gmail → **myaccount.google.com → Security** → turn on **2-Step Verification**.
-   - Open **myaccount.google.com/apppasswords** → create one named `Sociyo Supabase`
+   - Open **myaccount.google.com/apppasswords** → create one named `SociYo Supabase`
      → copy the 16-character password (shown only once).
    - Supabase → **Authentication → Emails → SMTP Settings** → **Enable custom SMTP**:
-     sender email and username = the Gmail address, sender name `Sociyo`,
+     sender email and username = the Gmail address, sender name `SociYo`,
      host `smtp.gmail.com`, port `465`, password = the app password (no spaces).
    - Brevo (free, 300/day) or Zoho work the same way.
 2. **Raise the email limit:** **Authentication → Rate Limits** → emails per hour
    around **100**, so a whole tower can log in on launch day.
 3. **Send a code, not a link.** **Authentication → Emails → Templates** – edit
    **both** templates (a new address gets *Confirm signup*, later logins get *Magic Link*).
-   Subject `Your Sociyo login code`, body:
+   Subject `Your SociYo login code`, body:
    ```html
-   <h2>Your Sociyo login code</h2>
+   <h2>Your SociYo login code</h2>
    <p>Enter this code in the app:</p>
    <h1 style="letter-spacing:6px">{{ .Token }}</h1>
    <p>The code expires in 1 hour. If you didn't ask for it, ignore this email.</p>

@@ -17,7 +17,7 @@ body {
   overscroll-behavior-y: none;
 }
 #root { max-width: 520px; margin: 0 auto; background: theme('colors.canvas'); min-height: 100%; position: relative; }
-@media (min-width: 540px) { body { background: #E9ECF2; } #root { box-shadow: 0 0 40px rgba(15,23,42,.08); } }
+@media (min-width: 540px) { body { background: #EEE7DF; } #root { box-shadow: 0 0 40px rgba(15,23,42,.08); } }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 .safe-top { padding-top: env(safe-area-inset-top); }

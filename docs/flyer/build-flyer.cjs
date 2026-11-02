@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the one-page A4 resident flyer for Sociyo.
+// Builds the one-page A4 resident flyer for SociYo.
 //
 //   npm run flyer                                   → blank placeholders (fill by hand / in browser)
 //   npm run flyer -- --name "Shanti Nagar CHS" --code SHANTI42 --phone "020 1234 5678"
@@ -48,46 +48,46 @@ const field = (key, label, hint, cls = '') =>
   `<span class="field ${cls}" contenteditable="true" spellcheck="false" data-key="${key}" data-placeholder="${esc(hint)}" aria-label="${esc(label)}">${esc(fill[key])}</span>`
 
 async function main() {
-  const qr = await QRCode.toString(APP_URL, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark: '#13254A', light: '#FFFFFF' } })
+  const qr = await QRCode.toString(APP_URL, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark: '#3B1F3A', light: '#FFFFFF' } })
 
   const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sociyo flyer</title>
+<title>SociYo flyer</title>
 <style>
 @font-face { font-family: 'Jakarta'; font-weight: 400; src: url(data:font/woff2;base64,${font('plus-jakarta-sans/files/plus-jakarta-sans-latin-400-normal.woff2')}) format('woff2'); }
 @font-face { font-family: 'Jakarta'; font-weight: 600; src: url(data:font/woff2;base64,${font('plus-jakarta-sans/files/plus-jakarta-sans-latin-600-normal.woff2')}) format('woff2'); }
 @font-face { font-family: 'Jakarta'; font-weight: 800; src: url(data:font/woff2;base64,${font('plus-jakarta-sans/files/plus-jakarta-sans-latin-800-normal.woff2')}) format('woff2'); }
 @font-face { font-family: 'NotoDeva'; font-weight: 600; src: url(data:font/woff2;base64,${font('noto-sans-devanagari/files/noto-sans-devanagari-devanagari-600-normal.woff2')}) format('woff2'); }
-:root { --navy: #13254A; --navy-2: #0A1A2E; --green: #22C55E; --green-d: #15803D; --ink: #1E293B; --muted: #64748B; --line: #E2E8F0; --tint: #F1F5F9; }
+:root { --navy: #3B1F3A; --navy-2: #2A1529; --green: #E8674A; --green-d: #B04A30; --ink: #2E2B2C; --muted: #6E6569; --line: #E7DED2; --tint: #F6F2FB; }
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: #CBD5E1; }
+html, body { margin: 0; background: #E7DED2; }
 body { font-family: 'Jakarta', 'NotoDeva', system-ui, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .page { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,.15); }
 @media print { html, body { background: #fff; } .page { margin: 0; box-shadow: none; } .hint { display: none; } }
 .deva { font-family: 'NotoDeva', 'Jakarta', sans-serif; }
 
 header { flex: none; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff; padding: 9mm 14mm 7mm; position: relative; overflow: hidden; }
-header::after { content: ''; position: absolute; right: -30mm; top: -30mm; width: 90mm; height: 90mm; border-radius: 50%; background: radial-gradient(circle, rgba(34,197,94,.28), rgba(34,197,94,0) 70%); }
+header::after { content: ''; position: absolute; right: -30mm; top: -30mm; width: 90mm; height: 90mm; border-radius: 50%; background: radial-gradient(circle, rgba(232,103,74,.30), rgba(232,103,74,0) 70%); }
 .brand { display: flex; align-items: center; gap: 5mm; position: relative; z-index: 1; }
 .brand svg { width: 20mm; height: 20mm; border-radius: 5.5mm; box-shadow: 0 0 0 .4mm rgba(255,255,255,.18); }
 .brand h1 { margin: 0; font-size: 18mm; line-height: .9; font-weight: 800; letter-spacing: -.6mm; }
 .taglines { position: relative; z-index: 1; margin-top: 4mm; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2mm 6mm; }
 .taglines .en { font-size: 8.5mm; font-weight: 800; }
 .taglines .en b { color: var(--green); font-weight: 800; }
-.taglines .deva { font-size: 5mm; color: #C7D2E6; }
-.now { position: relative; z-index: 1; margin-top: 3.5mm; font-size: 4.4mm; color: #DCE4F2; }
+.taglines .deva { font-size: 5mm; color: #D6C8F0; }
+.now { position: relative; z-index: 1; margin-top: 3.5mm; font-size: 4.4mm; color: #ECE4F7; }
 .now .field { color: #fff; font-weight: 800; min-width: 70mm; }
 
 main { flex: 1; min-height: 0; padding: 6.5mm 14mm 0; display: flex; flex-direction: column; }
 h2 { font-size: 4.2mm; text-transform: uppercase; letter-spacing: .5mm; color: var(--muted); margin: 0 0 3.5mm; font-weight: 800; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
 .tile { border: .3mm solid var(--line); border-radius: 4mm; padding: 2.8mm 3.6mm 2.6mm; background: #fff; }
-.tile .ic { width: 9mm; height: 9mm; border-radius: 3mm; display: grid; place-items: center; background: #EEF2FA; color: var(--navy); margin-bottom: 2mm; }
-.tile:nth-child(3n+2) .ic { background: #DCFCE7; color: var(--green-d); }
+.tile .ic { width: 9mm; height: 9mm; border-radius: 3mm; display: grid; place-items: center; background: #ECE4F7; color: var(--navy); margin-bottom: 2mm; }
+.tile:nth-child(3n+2) .ic { background: #FBDDD3; color: var(--green-d); }
 .tile .ic svg { width: 5.8mm; height: 5.8mm; }
 .tile b { display: block; font-size: 4mm; font-weight: 800; color: var(--navy); }
 .tile span { display: block; font-size: 3.1mm; line-height: 1.35; color: var(--muted); margin-top: .8mm; }
@@ -105,25 +105,25 @@ h2 { font-size: 4.2mm; text-transform: uppercase; letter-spacing: .5mm; color: v
 .qr .code { background: #fff; padding: 2.6mm; border-radius: 3mm; width: 40mm; height: 40mm; }
 .qr .code svg { width: 100%; height: 100%; display: block; }
 .qr b { display: block; margin-top: 3mm; font-size: 3.8mm; }
-.qr small { display: block; margin-top: 1mm; font-size: 2.6mm; color: #C7D2E6; white-space: nowrap; }
+.qr small { display: block; margin-top: 1mm; font-size: 2.6mm; color: #D6C8F0; white-space: nowrap; }
 
-footer { flex: none; margin: 4.5mm 14mm 7mm; border: .5mm dashed #94A3B8; border-radius: 4mm; padding: 3.5mm 5mm; display: grid; grid-template-columns: 1.15fr 1fr; gap: 3mm 6mm; }
+footer { flex: none; margin: 4.5mm 14mm 7mm; border: .5mm dashed #B9AEA6; border-radius: 4mm; padding: 3.5mm 5mm; display: grid; grid-template-columns: 1.15fr 1fr; gap: 3mm 6mm; }
 footer label { display: block; font-size: 2.9mm; text-transform: uppercase; letter-spacing: .35mm; color: var(--muted); font-weight: 800; }
-footer .field { display: block; margin-top: 1.2mm; font-size: 5.2mm; font-weight: 800; color: var(--navy); min-height: 7.5mm; border-bottom: .35mm dotted #94A3B8; }
+footer .field { display: block; margin-top: 1.2mm; font-size: 5.2mm; font-weight: 800; color: var(--navy); min-height: 7.5mm; border-bottom: .35mm dotted #B9AEA6; }
 footer .code .field { letter-spacing: .8mm; color: var(--green-d); }
 footer .wide { grid-column: 1 / -1; font-size: 3.1mm; color: var(--muted); }
 
 .field { outline: none; }
-.field:empty::before { content: attr(data-placeholder); color: #94A3B8; font-weight: 600; }
-header .field:empty::before { color: #8FA3C7; }
-@media print { .field:empty::before { content: ''; } .now .field:empty { display: inline-block; border-bottom: .35mm dotted #8FA3C7; } }
+.field:empty::before { content: attr(data-placeholder); color: #B9AEA6; font-weight: 600; }
+header .field:empty::before { color: #B49BD3; }
+@media print { .field:empty::before { content: ''; } .now .field:empty { display: inline-block; border-bottom: .35mm dotted #B49BD3; } }
 .hint { max-width: 210mm; margin: 0 auto 10mm; font: 13px/1.5 system-ui, sans-serif; color: #334155; text-align: center; }
 </style>
 </head>
 <body>
 <div class="page">
   <header>
-    <div class="brand">${logo}<h1>Sociyo</h1></div>
+    <div class="brand">${logo}<h1>SociYo</h1></div>
     <div class="taglines">
       <span class="en">Your society, <b>sorted.</b></span>
       <span class="deva">सोसायटी, सोपी.</span>
@@ -143,14 +143,14 @@ header .field:empty::before { color: #8FA3C7; }
       <div>
         <h2>Install in 3 steps</h2>
         <div class="steps">
-          <div class="step"><div class="n">1</div><div><b>Scan the QR code</b><span>Opens Sociyo in your browser – use <code>Chrome</code> on Android, <code>Safari</code> on iPhone.</span></div></div>
+          <div class="step"><div class="n">1</div><div><b>Scan the QR code</b><span>Opens SociYo in your browser – use <code>Chrome</code> on Android, <code>Safari</code> on iPhone.</span></div></div>
           <div class="step"><div class="n">2</div><div><b>Add to Home screen</b><span>Android: tap <code>⋮</code> → <code>Add to Home screen</code>. iPhone: tap <code>Share</code> → <code>Add to Home Screen</code>.</span></div></div>
           <div class="step"><div class="n">3</div><div><b>Log in &amp; join your society</b><span>Choose <code>Email</code> (or mobile), enter the code you receive, tap <code>Join my society</code>, type the society code below and pick your flat.</span></div></div>
         </div>
       </div>
       <div class="qr">
         <div class="code">${qr}</div>
-        <b>Scan to open Sociyo</b>
+        <b>Scan to open SociYo</b>
         <small>${APP_URL.replace('https://', '')}</small>
       </div>
     </div>

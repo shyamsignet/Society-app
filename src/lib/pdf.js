@@ -75,7 +75,7 @@ export function openDataUrl(url, name = 'file') {
 
 export function noticePdf(society, a, author) {
   return makePdf((p) => {
-    p.rect(0, 0, 595, 90, '#13254A')
+    p.rect(0, 0, 595, 90, '#3B1F3A')
     p.text(40, 42, society.name, { size: 20, bold: true, color: '#FFFFFF' })
     p.text(40, 64, society.address || society.city, { size: 9, color: '#B3C2E3' })
     p.text(40, 130, 'NOTICE', { size: 11, bold: true, color: '#16A34A' })
