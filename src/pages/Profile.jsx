@@ -6,7 +6,7 @@ import { towerLabel } from '../lib/flats'
 import { useAuth } from '../lib/auth'
 import { useData, db, resetDB } from '../lib/db'
 import { roleLabel, can } from '../lib/rbac'
-import { updateUser, aptById, devicePush } from '../lib/actions'
+import { updateUser, aptById, devicePush, saveFamilyMember, removeFamilyMember } from '../lib/actions'
 import { fileToDataUrl, uid, cls } from '../lib/utils'
 import { DEMO } from '../lib/config'
 import { storeMedia } from '../lib/media'
@@ -100,7 +100,7 @@ export default function Profile() {
       <p className="text-center text-[11px] text-ink-400 mt-5">SociYo · Made for {society.name}</p>
 
       <EditSheet open={sheet === 'edit'} onClose={() => setSheet(null)} user={user} save={save} />
-      <FamilySheet open={sheet === 'family'} onClose={() => setSheet(null)} user={user} save={save} flatmates={flatmates} />
+      <FamilySheet open={sheet === 'family'} onClose={() => setSheet(null)} user={user} flatmates={flatmates} />
       <VehicleSheet open={sheet === 'vehicles'} onClose={() => setSheet(null)} user={user} save={save} />
       <EmergencySheet open={sheet === 'emergency'} onClose={() => setSheet(null)} user={user} save={save} />
       <PrivacySheet open={sheet === 'privacy'} onClose={() => setSheet(null)} user={user} save={save} />
@@ -130,41 +130,50 @@ function EditSheet({ open, onClose, user, save }) {
   )
 }
 
-function FamilySheet({ open, onClose, user, save, flatmates }) {
+function FamilySheet({ open, onClose, user, flatmates }) {
   const act = useAction()
-  const [f, setF] = useState({ name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false })
-  const add = () => {
-    if (!f.name.trim()) return
-    const m = { id: uid('f'), name: f.name.trim(), relation: f.relation, phone: f.phone, access: f.access }
-    if (f.appLogin) {
-      const mobile = f.phone.replace(/\D/g, '').slice(-10)
-      const email = f.email.trim().toLowerCase()
-      if (f.phone.trim() && mobile.length !== 10) return act(() => { throw new Error('Enter a 10-digit mobile number.') })
-      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return act(() => { throw new Error('Enter a valid email address.') })
-      if (!mobile && !email) return act(() => { throw new Error('A mobile number or an email is needed for app access.') })
-      db.insert('users', { id: uid('u_'), name: m.name, phone: mobile ? '+91 ' + mobile : '', email, apartmentId: user.apartmentId, role: 'resident', status: 'active', familyOf: user.id, access: f.access, color: '#14B8A6', avatar: null, bio: '', family: [], vehicles: [], emergencyContact: null, privacy: { ...user.privacy }, prefs: { ...user.prefs, push: false }, joinedAt: new Date().toISOString() })
-      m.hasLogin = true
-    }
-    save({ family: [...(user.family || []), m] }, f.appLogin ? `${m.name} can now log in with ${[f.phone.trim(), f.email.trim()].filter(Boolean).join(' or ')}` : 'Family member added')
-    setF({ name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false })
+  const ask = useConfirm()
+  const blank = { name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false }
+  const [f, setF] = useState(blank)
+  const [editing, setEditing] = useState(null) // family entry id being edited
+  const logins = useData((d) => d.list('users', (u) => u.familyOf === user.id))
+  const loginOf = (m) => logins.find((u) => (m.userId ? u.id === m.userId : u.name?.trim().toLowerCase() === m.name?.trim().toLowerCase()))
+  const startEdit = (m) => { const l = loginOf(m); setEditing(m.id); setF({ name: m.name, relation: m.relation || 'Relative', phone: (m.phone || l?.phone || '').replace(/^\+91\s*/, ''), email: m.email || l?.email || '', access: m.access || 'limited', appLogin: !!(l && l.status === 'active') }) }
+  const reset = () => { setEditing(null); setF(blank) }
+  const submit = () => {
+    const ok = act(() => saveFamilyMember(user, editing, f), (e) => (editing ? `${e.name} updated` : f.appLogin ? `${e.name} can now log in with ${[f.phone.trim(), f.email.trim()].filter(Boolean).join(' or ')}` : 'Family member added'))
+    if (ok) reset()
   }
+  const remove = async (m) => {
+    const l = loginOf(m)
+    if (await ask({ title: `Remove ${m.name}?`, text: l && l.status === 'active' ? 'Their app login will be switched off too.' : 'They will be removed from your family list.', ok: 'Remove', danger: true })) { act(() => removeFamilyMember(user, m.id), 'Removed'); if (editing === m.id) reset() }
+  }
+  const relations = ['Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Sibling', 'Relative', 'Domestic help', 'Driver']
   return (
-    <Sheet open={open} onClose={onClose} title="Family members">
+    <Sheet open={open} onClose={() => { reset(); onClose() }} title="Family members">
       <div className="space-y-2 mb-5">
-        {(user.family || []).map((m) => (
-          <div key={m.id} className="flex items-center gap-3 p-3 rounded-2xl bg-ink-100/60">
+        {(user.family || []).map((m) => { const l = loginOf(m); return (
+          <div key={m.id} className={cls('flex items-center gap-3 p-3 rounded-2xl', editing === m.id ? 'bg-brand-50 ring-2 ring-brand-200' : 'bg-ink-100/60')}>
             <Avatar name={m.name} size={38} />
-            <div className="flex-1 min-w-0"><div className="font-semibold text-sm">{m.name}</div><div className="text-xs text-ink-500">{m.relation}{m.phone && ` · ${m.phone}`}</div></div>
-            <Badge color={m.access === 'full' ? 'green' : 'gray'}>{m.access}</Badge>
-            <button aria-label="Remove" onClick={() => save({ family: user.family.filter((x) => x.id !== m.id) }, 'Removed')} className="h-8 w-8 grid place-items-center text-ink-400"><Trash2 size={16} /></button>
-          </div>
-        ))}
-        {flatmates.length > 0 && <p className="text-xs text-ink-500 pt-1">Also registered on this flat: {flatmates.map((u) => u.name).join(', ')}</p>}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm truncate">{m.name}</div>
+              <div className="text-xs text-ink-500 truncate">{m.relation}{(m.phone || m.email) && ` · ${m.phone || m.email}`}</div>
+            </div>
+            {l && l.status === 'active' && <Badge color="green">App login</Badge>}
+            <Badge color={m.access === 'full' ? 'blue' : 'gray'}>{m.access === 'full' ? 'Full' : 'Limited'}</Badge>
+            <button aria-label={`Edit ${m.name}`} onClick={() => startEdit(m)} className="h-8 w-8 grid place-items-center text-ink-500"><Pencil size={16} /></button>
+            <button aria-label={`Remove ${m.name}`} onClick={() => remove(m)} className="h-8 w-8 grid place-items-center text-ink-400"><Trash2 size={16} /></button>
+          </div>) })}
+        {!(user.family || []).length && <p className="text-sm text-ink-500">No family members added yet.</p>}
+        {flatmates.filter((u) => u.familyOf !== user.id).length > 0 && <p className="text-xs text-ink-500 pt-1">Also registered on this flat: {flatmates.filter((u) => u.familyOf !== user.id).map((u) => u.name).join(', ')}</p>}
       </div>
-      <div className="text-sm font-bold mb-2">Add a member</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm font-bold">{editing ? <span>Edit family member</span> : <span>Add a member</span>}</div>
+        {editing && <button className="text-sm font-semibold text-brand-600" onClick={reset}>Cancel</button>}
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Name"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-        <Field label="Relation"><Select value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })}>{['Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Sibling', 'Relative', 'Domestic help', 'Driver'].map((r) => <option key={r}>{r}</option>)}</Select></Field>
+        <Field label="Relation"><Select value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })}>{[...new Set([...relations, f.relation])].map((r) => <option key={r}>{r}</option>)}</Select></Field>
       </div>
       <Field label="Mobile (optional)"><Input inputMode="numeric" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
       <Field label="Permissions" hint={f.access === 'full' ? 'Can pay dues, approve visitors and book facilities' : 'Can view notices, feed and approve visitors only'}>
@@ -172,7 +181,8 @@ function FamilySheet({ open, onClose, user, save, flatmates }) {
       </Field>
       <Toggle checked={f.appLogin} onChange={(v) => setF({ ...f, appLogin: v })} label="Give app login" desc="They log in with their own mobile number or email – no approval needed" />
       {f.appLogin && <Field label="Email (for login by email code)" hint="Use this until SMS login is available in your society"><Input type="email" autoCapitalize="none" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>}
-      <Button block icon={Plus} className="mt-3" onClick={add} disabled={!f.name.trim()}>Add member</Button>
+      {editing && !f.appLogin && loginOf((user.family || []).find((x) => x.id === editing) || {})?.status === 'active' && <p className="text-xs text-red-600 mb-2">Saving will switch off their app login.</p>}
+      <Button block icon={editing ? undefined : Plus} className="mt-3" onClick={submit} disabled={!f.name.trim()}>{editing ? 'Save changes' : 'Add member'}</Button>
     </Sheet>
   )
 }

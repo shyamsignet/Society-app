@@ -107,7 +107,7 @@ src/
   pages/Onboarding.jsx  join a society / society setup wizard
   pages/admin/Import.jsx  CSV import of residents (roles, opening balances) and flats
 supabase/setup.sql   the whole backend: tables, permission checks, sync feed, storage
-supabase/test/       security tests (78 checks) + a local Supabase stand-in for testing
+supabase/test/       security tests (85 checks) + a local Supabase stand-in for testing
 docs/GO-LIVE.md      step-by-step: from zero to a live society
 ```
 

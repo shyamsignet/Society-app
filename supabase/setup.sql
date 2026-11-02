@@ -188,6 +188,11 @@ begin
     if p_id = me then
       return only_changed(o, n, array['name','phone','email','bio','avatar','color','privacy','prefs','family','vehicles','emergencyContact']);
     end if;
+    if o ->> 'familyOf' = me then   -- a family login I created: contact details, access, on/off
+      return only_changed(o, n, array['name','phone','email','access','status'])
+         and coalesce(n ->> 'status', 'active') in ('active', 'inactive')
+         and coalesce(n ->> 'access', 'limited') in ('limited', 'full');
+    end if;
     return false;
 
   when 'staff', 'contacts', 'facilities' then

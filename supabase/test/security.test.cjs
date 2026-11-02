@@ -129,6 +129,15 @@ const recs = (res, col) => (res.r.records || []).filter((x) => x.c === col).map(
   ok('anyone can notify a neighbour', (await save(RES, 'notifications', 'n1', { userId: 'u_res2', title: 'Hi' })).ok)
   ok("cannot read others' notifications", recs(await rpc(RES, 'fetch_society', 'testsoc'), 'notifications').length === 0)
 
+  console.log('Family logins')
+  ok('resident adds a family member with a login', (await save(RES, 'users', 'u_kid', { name: 'Kid', email: 'kid@x.in', apartmentId: 'apt_A-101', role: 'resident', status: 'active', familyOf: 'u_res', access: 'limited' })).ok)
+  ok('resident edits their family member (name, access)', (await save(RES, 'users', 'u_kid', { name: 'Kiddo', access: 'full' })).ok)
+  ok('resident switches a family login off', (await save(RES, 'users', 'u_kid', { status: 'inactive' })).ok)
+  ok('…and on again', (await save(RES, 'users', 'u_kid', { status: 'active' })).ok)
+  ok('resident cannot give their family member a committee role', !(await save(RES, 'users', 'u_kid', { role: 'chairman' })).ok)
+  ok('resident cannot move a family member to another flat', !(await save(RES, 'users', 'u_kid', { apartmentId: 'apt_A-102' })).ok)
+  ok("flatmate cannot edit someone else's family member", !(await save(FAM, 'users', 'u_kid', { name: 'Hacked' })).ok)
+
   console.log('Events & shared expenses')
   ok('committee creates an event', (await save(CHAIR, 'events', 'ev1', { title: 'Diwali', organizerId: 'u_chair', rsvps: [], gallery: [], reminders: [], expenses: [], settlements: [] })).ok)
   ok('resident RSVPs with family members and guests', (await save(RES, 'events', 'ev1', { rsvps: [{ userId: 'u_res', status: 'going', guests: 1, members: [{ id: 'f1', name: 'Kid' }] }] })).ok)

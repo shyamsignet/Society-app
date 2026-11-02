@@ -89,6 +89,54 @@ export function updateUser(actor, id, patch) {
   return db.update('users', id, patch)
 }
 
+// ---------- Family members (Profile → Family members) ----------
+// A family entry lives on the resident's own record. With "app login" it also has
+// its own user record (familyOf = the resident), which the resident can edit,
+// switch off (inactive) and on again – nothing else about it.
+const digits10 = (s) => String(s || '').replace(/\D/g, '').slice(-10)
+export function familyLoginOf(user, m) {
+  if (!m) return null
+  const name = (m.name || '').trim().toLowerCase()
+  return db.list('users', (u) => u.familyOf === user.id && (m.userId ? u.id === m.userId : (u.name || '').trim().toLowerCase() === name))[0] || null
+}
+export function saveFamilyMember(user, id, f) {
+  const name = String(f.name || '').trim()
+  req(name, 'Name')
+  const family = [...(user.family || [])]
+  const old = id ? family.find((x) => x.id === id) : null
+  must(!id || old, 'Family member not found.')
+  const mobile = digits10(f.phone)
+  const email = String(f.email || '').trim().toLowerCase()
+  if (String(f.phone || '').trim()) must(mobile.length === 10, 'Enter a 10-digit mobile number.')
+  if (email) must(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email), 'Enter a valid email address.')
+  const access = f.access === 'full' ? 'full' : 'limited'
+  const entry = { ...(old || {}), id: old?.id || uid('f'), name, relation: f.relation || 'Relative', phone: mobile ? '+91 ' + mobile : '', email, access }
+  let login = familyLoginOf(user, old)
+  if (f.appLogin) {
+    must(user.apartmentId, 'Your flat must be set before family members can get a login.')
+    must(mobile || email, 'A mobile number or an email is needed for app access.')
+    const clash = db.list('users', (u) => u.id !== login?.id && u.status === 'active' && ((email && (u.email || '').toLowerCase() === email) || (mobile && digits10(u.phone) === mobile)))[0]
+    must(!clash, `${clash?.name} already uses this mobile number or email in the society.`)
+    const rec = { name, phone: mobile ? '+91 ' + mobile : '', email, access, status: 'active' }
+    if (login) db.update('users', login.id, rec)
+    else login = db.insert('users', { id: uid('u_'), ...rec, apartmentId: user.apartmentId, role: 'resident', familyOf: user.id, color: '#8A6A9C', avatar: null, bio: '', family: [], vehicles: [], emergencyContact: null, privacy: { ...(user.privacy || {}) }, prefs: { ...(user.prefs || {}), push: false }, joinedAt: new Date().toISOString() })
+    entry.hasLogin = true; entry.userId = login.id
+  } else {
+    if (login && login.status === 'active') db.update('users', login.id, { status: 'inactive' })
+    entry.hasLogin = false
+    if (login) entry.userId = login.id
+  }
+  updateUser(user, user.id, { family: old ? family.map((x) => (x.id === id ? entry : x)) : [...family, entry] })
+  return entry
+}
+export function removeFamilyMember(user, id) {
+  const m = (user.family || []).find((x) => x.id === id)
+  must(m, 'Family member not found.')
+  const login = familyLoginOf(user, m)
+  if (login && login.status === 'active') db.update('users', login.id, { status: 'inactive' })
+  updateUser(user, user.id, { family: user.family.filter((x) => x.id !== id) })
+}
+
 // ---------- Flats ----------
 // Put a person in a flat (or none, for office staff) and record owner/tenant.
 export function setMemberFlat(actor, userId, apartmentId, occupancy) {
