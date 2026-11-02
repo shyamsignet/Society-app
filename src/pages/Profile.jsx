@@ -136,10 +136,13 @@ function FamilySheet({ open, onClose, user, flatmates }) {
   const blank = { name: '', relation: 'Spouse', phone: '', email: '', access: 'limited', appLogin: false }
   const [f, setF] = useState(blank)
   const [editing, setEditing] = useState(null) // family entry id being edited
+  const [formOpen, setFormOpen] = useState(false)
+  const formRef = useRef(null)
+  useEffect(() => { if (formOpen) setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) }, [formOpen, editing])
   const logins = useData((d) => d.list('users', (u) => u.familyOf === user.id))
   const loginOf = (m) => logins.find((u) => (m.userId ? u.id === m.userId : u.name?.trim().toLowerCase() === m.name?.trim().toLowerCase()))
-  const startEdit = (m) => { const l = loginOf(m); setEditing(m.id); setF({ name: m.name, relation: m.relation || 'Relative', phone: (m.phone || l?.phone || '').replace(/^\+91\s*/, ''), email: m.email || l?.email || '', access: m.access || 'limited', appLogin: !!(l && l.status === 'active') }) }
-  const reset = () => { setEditing(null); setF(blank) }
+  const startEdit = (m) => { const l = loginOf(m); setEditing(m.id); setF({ name: m.name, relation: m.relation || 'Relative', phone: (m.phone || l?.phone || '').replace(/^\+91\s*/, ''), email: m.email || l?.email || '', access: m.access || 'limited', appLogin: !!(l && l.status === 'active') }); setFormOpen(true) }
+  const reset = () => { setEditing(null); setF(blank); setFormOpen(false) }
   const submit = () => {
     const ok = act(() => saveFamilyMember(user, editing, f), (e) => (editing ? `${e.name} updated` : f.appLogin ? `${e.name} can now log in with ${[f.phone.trim(), f.email.trim()].filter(Boolean).join(' or ')}` : 'Family member added'))
     if (ok) reset()
@@ -153,23 +156,28 @@ function FamilySheet({ open, onClose, user, flatmates }) {
     <Sheet open={open} onClose={() => { reset(); onClose() }} title="Family members">
       <div className="space-y-2 mb-5">
         {(user.family || []).map((m) => { const l = loginOf(m); return (
-          <div key={m.id} className={cls('flex items-center gap-3 p-3 rounded-2xl', editing === m.id ? 'bg-brand-50 ring-2 ring-brand-200' : 'bg-ink-100/60')}>
-            <Avatar name={m.name} size={38} />
+          <div key={m.id} className={cls('flex items-start gap-3 p-3 rounded-2xl', editing === m.id ? 'bg-brand-50 ring-2 ring-brand-200' : 'bg-ink-100/60')}>
+            <Avatar name={m.name} size={40} />
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm truncate">{m.name}</div>
-              <div className="text-xs text-ink-500 truncate">{m.relation}{(m.phone || m.email) && ` · ${m.phone || m.email}`}</div>
+              <div className="text-sm leading-snug"><span className="font-semibold">{m.name}</span> <span className="text-ink-500">· {m.relation}</span></div>
+              {(m.phone || m.email) && <div className="text-xs text-ink-500 break-all">{[m.phone, m.email].filter(Boolean).join(' · ')}</div>}
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                {l && l.status === 'active' && <Badge color="green">App login</Badge>}
+                <Badge color={m.access === 'full' ? 'blue' : 'gray'}>{m.access === 'full' ? 'Full' : 'Limited'}</Badge>
+                <span className="flex-1" />
+                <button aria-label={`Edit ${m.name}`} onClick={() => startEdit(m)} className="h-9 w-9 rounded-xl grid place-items-center text-ink-600 hover:bg-white"><Pencil size={17} /></button>
+                <button aria-label={`Remove ${m.name}`} onClick={() => remove(m)} className="h-9 w-9 rounded-xl grid place-items-center text-ink-400 hover:bg-white"><Trash2 size={17} /></button>
+              </div>
             </div>
-            {l && l.status === 'active' && <Badge color="green">App login</Badge>}
-            <Badge color={m.access === 'full' ? 'blue' : 'gray'}>{m.access === 'full' ? 'Full' : 'Limited'}</Badge>
-            <button aria-label={`Edit ${m.name}`} onClick={() => startEdit(m)} className="h-8 w-8 grid place-items-center text-ink-500"><Pencil size={16} /></button>
-            <button aria-label={`Remove ${m.name}`} onClick={() => remove(m)} className="h-8 w-8 grid place-items-center text-ink-400"><Trash2 size={16} /></button>
           </div>) })}
         {!(user.family || []).length && <p className="text-sm text-ink-500">No family members added yet.</p>}
         {flatmates.filter((u) => u.familyOf !== user.id).length > 0 && <p className="text-xs text-ink-500 pt-1">Also registered on this flat: {flatmates.filter((u) => u.familyOf !== user.id).map((u) => u.name).join(', ')}</p>}
       </div>
+      {!formOpen && <Button block variant="secondary" icon={Plus} onClick={() => { setEditing(null); setF(blank); setFormOpen(true) }}>Add family member</Button>}
+      {formOpen && (<div ref={formRef} className="rounded-2xl border border-ink-200 p-4 scroll-mt-4">
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-bold">{editing ? <span>Edit family member</span> : <span>Add a member</span>}</div>
-        {editing && <button className="text-sm font-semibold text-brand-600" onClick={reset}>Cancel</button>}
+        <button className="text-sm font-semibold text-brand-600" onClick={reset}>Cancel</button>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Name"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
@@ -183,6 +191,7 @@ function FamilySheet({ open, onClose, user, flatmates }) {
       {f.appLogin && <Field label="Email (for login by email code)" hint="Use this until SMS login is available in your society"><Input type="email" autoCapitalize="none" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>}
       {editing && !f.appLogin && loginOf((user.family || []).find((x) => x.id === editing) || {})?.status === 'active' && <p className="text-xs text-red-600 mb-2">Saving will switch off their app login.</p>}
       <Button block icon={editing ? undefined : Plus} className="mt-3" onClick={submit} disabled={!f.name.trim()}>{editing ? 'Save changes' : 'Add member'}</Button>
+      </div>)}
     </Sheet>
   )
 }
