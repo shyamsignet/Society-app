@@ -529,6 +529,24 @@ export function createEvent(user, data) {
   notify('all', { type: 'events', title: `New event: ${e.title}`, body: `${fmtDateTime(e.start)} · ${e.venue}`, link: `/events/${e.id}` })
   return e
 }
+// The organiser and committee (publish roles) may edit an event – same rule as the database.
+export const canEditEvent = (user, e) => !!e && (e.organizerId === user.id || can(user, 'announcement.publish'))
+export function updateEvent(user, id, data) {
+  const e = db.get('events', id)
+  must(e, 'Event not found.')
+  must(canEditEvent(user, e), 'Only the organiser or the committee can edit this event.')
+  req(data.title, 'Title'); req(data.start, 'Start time'); req(data.venue, 'Venue')
+  must(!data.end || new Date(data.end) > new Date(data.start), 'End time must be after start time.')
+  const out = db.update('events', id, data)
+  // Tell people who said Going/Maybe when the when/where changed.
+  const moved = e.start !== out.start || (e.end || '') !== (out.end || '') || e.venue !== out.venue
+  if (moved) {
+    const who = e.rsvps.filter((r) => r.status && r.userId !== user.id).map((r) => r.userId)
+    if (who.length) notify(who, { type: 'events', title: `Event updated: ${out.title}`, body: `${fmtDateTime(out.start)} · ${out.venue}`, link: `/events/${id}` })
+  }
+  return out
+}
+
 // Everyone in my flat I could bring along: flatmates with their own login, and
 // family members listed on profiles (those without a login of their own).
 export function household(user) {
