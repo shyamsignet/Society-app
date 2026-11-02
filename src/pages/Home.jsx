@@ -4,6 +4,7 @@ import { Bell, Wallet, MessageSquareWarning, UserCheck, CalendarDays, Vote, Stor
 import { Avatar, Card, Chips, SectionTitle, IconButton, Empty, Button, useAction } from '../components/ui'
 import PostCard from '../components/PostCard'
 import AnnouncementCard from '../components/AnnouncementCard'
+import SubscriptionBanner from '../components/SubscriptionBanner'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { can, isAdmin } from '../lib/rbac'
@@ -72,6 +73,7 @@ export default function Home() {
       </div>
 
       <div className="px-4 -mt-14 relative space-y-3">
+        <SubscriptionBanner className="shadow-card" />
         {alerts.map((a) => (
           <Link to="/emergency" key={a.id} className="flex items-start gap-3 p-4 rounded-2xl bg-red-600 text-white shadow-float animate-pop">
             <Siren className="shrink-0 animate-pulse" />

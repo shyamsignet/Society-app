@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, ChevronRight, Users, Car, HeartPulse, ShieldCheck, Bell, LogOut, RotateCcw, Pencil, Plus, Trash2, Download, Smartphone, Home as HomeIcon, Info, LayoutDashboard, Phone, Mail } from 'lucide-react'
+import { Camera, ChevronRight, Users, Car, HeartPulse, ShieldCheck, Bell, LogOut, RotateCcw, Pencil, Plus, Trash2, Download, Smartphone, Home as HomeIcon, Info, LayoutDashboard, Phone, Mail, Building2 } from 'lucide-react'
 import { Page, Card, Avatar, Sheet, Field, Input, Textarea, Select, Toggle, Button, Badge, useAction, useConfirm, useToast } from '../components/ui'
 import { towerLabel } from '../lib/flats'
 import { useAuth } from '../lib/auth'
@@ -10,6 +10,7 @@ import { updateUser, aptById, devicePush, saveFamilyMember, removeFamilyMember }
 import { fileToDataUrl, uid, cls } from '../lib/utils'
 import { DEMO } from '../lib/config'
 import { storeMedia } from '../lib/media'
+import { usePlatformAdmin } from '../lib/subscription'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import { canInstall, isStandalone, onInstallChange, promptInstall } from '../lib/install'
 
@@ -26,6 +27,7 @@ export default function Profile() {
   const apt = useData(() => aptById(user.apartmentId))
   const flatmates = useData((d) => d.list('users', (u) => u.apartmentId && u.apartmentId === user.apartmentId && u.id !== user.id && u.status === 'active'))
   const save = (patch, msg = 'Saved') => act(() => updateUser(user, user.id, patch), msg)
+  const platformOwner = usePlatformAdmin()
 
   const changePhoto = async (e) => {
     const f = e.target.files[0]
@@ -34,7 +36,7 @@ export default function Profile() {
     try { save({ avatar: await storeMedia(await fileToDataUrl(f, 400, 0.85), 'avatar.jpg') }, 'Profile photo updated') } catch (err) { toast(err.message, 'error') }
   }
   const row = (icon, label, sub, key, color = 'bg-brand-50 text-brand-700') => (
-    <button onClick={() => (key === 'admin' ? nav('/admin') : setSheet(key))} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-ink-100">
+    <button onClick={() => (key === 'admin' ? nav('/admin') : key === 'platform' ? nav('/platform') : setSheet(key))} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-ink-100">
       <span className={cls('h-10 w-10 rounded-xl grid place-items-center', color)}>{icon}</span>
       <div className="flex-1 min-w-0"><div className="font-semibold">{label}</div>{sub && <div className="text-xs text-ink-500 truncate">{sub}</div>}</div>
       <ChevronRight size={18} className="text-ink-300" />
@@ -70,6 +72,7 @@ export default function Profile() {
       )}
 
       {can(user, 'admin.view') && <Card className="mt-3 overflow-hidden">{row(<LayoutDashboard size={18} />, 'Admin dashboard', roleLabel(user.role), 'admin', 'bg-brand-800 text-white')}</Card>}
+      {platformOwner && <Card className="mt-3 overflow-hidden">{row(<Building2 size={18} />, 'Platform console', 'All societies · subscriptions', 'platform', 'bg-coral-500 text-white')}</Card>}
 
       {user.apartmentId && (
         <>

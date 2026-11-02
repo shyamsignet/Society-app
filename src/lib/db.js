@@ -94,6 +94,7 @@ export async function resetDB() {
 
 /* ---------- cloud sync ---------- */
 const sync = { seq: 0, syncedAt: 0, outbox: [], flushing: false, pulling: false, unsub: null, timer: null, online: true }
+export const currentSocietyId = () => currentSociety
 export const syncStatus = () => ({ pending: sync.outbox.length, online: sync.online, syncedAt: sync.syncedAt })
 const outboxKey = () => `smart-society-outbox-${currentSociety}`
 const saveOutbox = () => idbSet(outboxKey(), sync.outbox).catch(() => {})

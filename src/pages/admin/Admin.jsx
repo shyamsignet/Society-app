@@ -1,5 +1,5 @@
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { Building2, Users, Wallet, AlertCircle, MessageSquareWarning, CalendarCheck, CalendarDays, UserPlus, Megaphone, Receipt, UserCheck, Dumbbell, Vote, ShieldAlert, BarChart3, ChevronRight, Siren, Upload, Contact } from 'lucide-react'
+import { BadgeIndianRupee, Building2, Users, Wallet, AlertCircle, MessageSquareWarning, CalendarCheck, CalendarDays, UserPlus, Megaphone, Receipt, UserCheck, Dumbbell, Vote, ShieldAlert, BarChart3, ChevronRight, Siren, Upload, Contact } from 'lucide-react'
 import { Page, Card, Stat, SectionTitle } from '../../components/ui'
 import { Ring } from '../../components/Charts'
 import { useAuth } from '../../lib/auth'
@@ -13,6 +13,7 @@ import Reports from './Reports'
 import { AdminComplaints, AdminBookings, Moderation, AdminVisitors } from './Manage'
 import Import from './Import'
 import Contacts from './Contacts'
+import Subscription from './Subscription'
 
 export default function Admin() {
   return (
@@ -27,6 +28,7 @@ export default function Admin() {
       <Route path="reports" element={<Reports />} />
       <Route path="import" element={<Import />} />
       <Route path="contacts" element={<Contacts />} />
+      <Route path="subscription" element={<Subscription />} />
     </Routes>
   )
 }
@@ -69,7 +71,8 @@ function Overview() {
     { to: '/polls', label: can(user, 'polls.create') ? 'Polls – create & results' : 'Polls', icon: Vote },
     can(user, 'moderation') && { to: 'moderation', label: 'Community moderation', icon: ShieldAlert, badge: s.reported },
     can(user, 'emergency.alert') && { to: '/emergency', label: 'Emergency alerts', icon: Siren, badge: s.alerts },
-    can(user, 'reports.view') && { to: 'reports', label: 'Reports & analytics', icon: BarChart3 }
+    can(user, 'reports.view') && { to: 'reports', label: 'Reports & analytics', icon: BarChart3 },
+    (can(user, 'residents.manage') || can(user, 'billing.manage')) && { to: 'subscription', label: 'SociYo subscription', icon: BadgeIndianRupee }
   ].filter(Boolean)
   return (
     <Page title="Admin dashboard" subtitle={roleLabel(user.role)} back="/">

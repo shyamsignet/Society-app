@@ -22,6 +22,7 @@ const Complaints = lazy(() => import('./pages/Complaints'))
 const Payments = lazy(() => import('./pages/Payments'))
 const Visitors = lazy(() => import('./pages/Visitors'))
 const Guard = lazy(() => import('./pages/Guard'))
+const Platform = lazy(() => import('./pages/Platform'))
 const Facilities = lazy(() => import('./pages/Facilities'))
 const Marketplace = lazy(() => import('./pages/Marketplace'))
 const Events = lazy(() => import('./pages/Events'))
@@ -92,6 +93,7 @@ function Shell() {
           <Route path="/events/*" element={<Events />} />
           <Route path="/polls/*" element={<Polls />} />
           <Route path="/emergency" element={<Emergency />} />
+          <Route path="/platform" element={<Platform />} />
           <Route path="/admin/*" element={can(user, 'admin.view') ? <Admin /> : <Navigate to="/" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

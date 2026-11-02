@@ -22,7 +22,7 @@ const recs = (res, col) => (res.r.records || []).filter((x) => x.c === col).map(
 
 ;(async () => {
   await db.connect()
-  await db.query("truncate public.records, public.members, public.changes; delete from auth.users")
+  await db.query("truncate public.records, public.members, public.changes, public.subscriptions, public.subscription_payments, public.platform_admins; delete from auth.users")
   const mk = async (phone, email = null) => (await db.query('insert into auth.users(phone,email) values($1,$2) returning id', [phone, email])).rows[0].id
   const ADMIN = await mk('919000000001'), RES = await mk('919000000002'), FAM = await mk('919000000003'), OUT = await mk('919000000009')
   const TREAS = await mk('919000000004'), GUARD = await mk('919000000005'), CHAIR = await mk('919000000006'), RES2 = await mk('919000000007')
@@ -150,6 +150,34 @@ const recs = (res, col) => (res.r.records || []).filter((x) => x.c === col).map(
   ok("cannot record a contribution between two other people", !(await save(FAM, 'events', 'ev1', { settlements: [{ id: 's2', userId: 'u_fam', from: 'u_fam', to: 'u_res', amount: 300 }, { id: 'c1', kind: 'contribution', userId: 'u_fam', from: 'u_fam', to: 'u_chair', amount: 500 }, { id: 'c2', kind: 'contribution', userId: 'u_fam', from: 'u_res', to: 'u_chair', amount: 500 }] })).ok)
   ok('only the organiser sets the contribution amount', !(await save(FAM, 'events', 'ev1', { contribution: { amount: 1, per: 'family' } })).ok)
   ok('organiser can remove a wrong expense', (await save(CHAIR, 'events', 'ev1', { expenses: [] })).ok)
+
+  console.log('Subscriptions')
+  const PLAT = await mk('919000000099')
+  await db.query('insert into public.platform_admins(auth_id) values($1)', [PLAT])
+  const sub0 = await rpc(CHAIR, 'my_subscription', 'testsoc')
+  ok('a new society starts on a 30-day trial', sub0.ok && sub0.r.state === 'ok' && sub0.r.plan === 'yearly' && Number(sub0.r.pricePerFlat) === 20 && !!sub0.r.trialEnds, JSON.stringify(sub0).slice(0, 200))
+  ok('subscription tables cannot be read directly', !(await as(CHAIR, 'select * from public.subscriptions')).ok)
+  ok('society admin cannot extend their own subscription', !(await rpc(ADMIN, 'platform_record_payment', 'testsoc', 5760, 12, 'UPI', 'x', '')).ok)
+  ok('society admin cannot see other societies', !(await rpc(ADMIN, 'platform_overview')).ok)
+  ok('platform owner sees every society', (await rpc(PLAT, 'platform_overview')).r?.societies?.some((x) => x.id === 'testsoc'))
+  const pay = await rpc(PLAT, 'platform_record_payment', 'testsoc', 720, 12, 'UPI', 'UTR123', 'first year')
+  ok('platform owner records a payment and an invoice number is issued', pay.ok && /^SY\/\d{4}-\d{2}\/\d{4}$/.test(pay.r.invoice_no) && pay.r.months === 12, JSON.stringify(pay).slice(0, 200))
+  const sub1 = await rpc(CHAIR, 'my_subscription', 'testsoc')
+  ok('…which extends paid-until by a year', sub1.ok && new Date(sub1.r.paidUntil) > new Date(Date.now() + 360 * 86400000) && sub1.r.payments.length === 1)
+  ok('residents do not see invoices', (await rpc(RES, 'my_subscription', 'testsoc')).r?.payments?.length === 0)
+  const past = (d) => new Date(Date.now() - d * 86400000).toISOString()
+  await rpc(PLAT, 'platform_update_subscription', 'testsoc', { trialEnds: past(5), paidUntil: past(5) })
+  ok('just expired: grace period, still writable', (await rpc(CHAIR, 'my_subscription', 'testsoc')).r?.state === 'grace' && (await save(CHAIR, 'announcements', 'an_g', { title: 'x', body: 'y', readBy: [], ackBy: [] })).ok)
+  await rpc(PLAT, 'platform_update_subscription', 'testsoc', { trialEnds: past(30), paidUntil: past(30) })
+  const lockedW = await save(CHAIR, 'announcements', 'an_l', { title: 'x', body: 'y', readBy: [], ackBy: [] })
+  ok('after the grace period the society is read-only', (await rpc(CHAIR, 'my_subscription', 'testsoc')).r?.state === 'locked' && !lockedW.ok && /subscription_expired/.test(lockedW.err), lockedW.err)
+  ok('…but everyone can still read their data', (await rpc(RES, 'fetch_society', 'testsoc')).ok)
+  ok('deleting is blocked too', !(await rpc(CHAIR, 'delete_record', 'testsoc', 'announcements', 'an_g')).ok)
+  await rpc(PLAT, 'platform_update_subscription', 'testsoc', { plan: 'complimentary' })
+  ok('complimentary plan never expires', (await rpc(CHAIR, 'my_subscription', 'testsoc')).r?.state === 'ok')
+  await rpc(PLAT, 'platform_update_subscription', 'testsoc', { plan: 'yearly', status: 'suspended' })
+  ok('suspended society is read-only', (await rpc(CHAIR, 'my_subscription', 'testsoc')).r?.state === 'locked')
+  await rpc(PLAT, 'platform_update_subscription', 'testsoc', { status: 'active', paidUntil: new Date(Date.now() + 86400000 * 30).toISOString() })
 
   console.log('Sync & lockout')
   const s0 = (await rpc(RES2, 'fetch_society', 'testsoc')).r.seq

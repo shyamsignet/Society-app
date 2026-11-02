@@ -20,7 +20,10 @@ const FRIENDLY = {
   registration_pending: 'Your registration request is already waiting for approval.',
   already_member: 'You are already a member of this society.',
   apartment_not_found: 'Please choose your flat.',
-  society_not_found: 'No society found with that code.'
+  society_not_found: 'No society found with that code.',
+  subscription_expired: 'This society’s SociYo subscription has expired, so the app is read-only. The committee can renew it under Admin → Subscription.',
+  invalid_payment: 'Check the amount and the number of months.',
+  invalid_subscription: 'Check the plan and status.'
 }
 const friendly = (msg = '') => {
   if (msg.startsWith('permission_denied')) return 'You do not have permission to do this.'
@@ -51,7 +54,13 @@ export const api = {
   createSociety: (soc, info, admin) => rpc('create_society', { p_society: soc, p_info: info, p_admin: admin }),
   societyDirectory: (soc) => rpc('society_directory', { p_society: soc }),
   submitRegistration: (soc, data) => rpc('submit_registration', { p_society: soc, p_data: data }),
-  myRegistrations: () => rpc('my_registrations', {})
+  myRegistrations: () => rpc('my_registrations', {}),
+  mySubscription: (soc) => rpc('my_subscription', { p_society: soc }),
+  isPlatformAdmin: () => rpc('is_platform_admin', {}),
+  platformOverview: () => rpc('platform_overview', {}),
+  platformRecordPayment: (soc, { amount, months, method, ref, note }) => rpc('platform_record_payment', { p_society: soc, p_amount: Number(amount), p_months: Number(months), p_method: method || '', p_ref: ref || '', p_note: note || '' }),
+  platformUpdateSubscription: (soc, patch) => rpc('platform_update_subscription', { p_society: soc, p_patch: patch }),
+  platformSetSettings: (data) => rpc('platform_set_settings', { p_data: data })
 }
 
 /* ---------- Auth (OTP by SMS or email) ---------- */

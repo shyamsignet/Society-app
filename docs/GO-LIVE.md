@@ -151,7 +151,7 @@ the society code, choose their flat, and the committee approves them under
 
 ## What the security rules guarantee
 
-These are tested automatically on every update (`npm run test:db`, 88 checks):
+These are tested automatically on every update (`npm run test:db`, 102 checks):
 
 - Only members of the society can read anything; tables cannot be read directly.
 - Residents see only their **own** bills, payments, complaints, visitors and notifications.
