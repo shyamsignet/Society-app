@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Home, Users, Plus, LayoutGrid, UserRound, ShieldCheck, ClipboardList, MessageSquareWarning, Wallet, PenSquare, AlertTriangle, Wrench, UserPlus, Search, CalendarPlus } from 'lucide-react'
+import { Home, Users, Plus, Newspaper, UserRound, ShieldCheck, ClipboardList, MessageSquareWarning, Wallet, PenSquare, AlertTriangle, Wrench, UserPlus, Search, CalendarPlus } from 'lucide-react'
 import { Sheet } from './ui'
 import { cls } from '../lib/utils'
 import { useAuth } from '../lib/auth'
@@ -50,7 +50,7 @@ export default function BottomNav({ guard }) {
                 <Plus size={30} strokeWidth={2.6} className={cls('transition-transform', open && 'rotate-45')} />
               </button>
             </div>
-            {guard ? <Item to="/directory" icon={Users} label="Directory" /> : <Item to="/services" icon={LayoutGrid} label="Services" />}
+            {guard ? <Item to="/directory" icon={Users} label="Directory" /> : <Item to="/feed" icon={Newspaper} label="Feed" />}
             <Item to="/profile" icon={UserRound} label="Profile" />
           </div>
         </div>

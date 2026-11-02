@@ -13,7 +13,6 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 
 const Directory = lazy(() => import('./pages/Directory'))
-const Services = lazy(() => import('./pages/Services'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const Announcements = lazy(() => import('./pages/Announcements'))
@@ -79,7 +78,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={guard ? <Navigate to="/guard" replace /> : <Home />} />
           <Route path="/directory" element={<Directory />} />
-          <Route path="/services" element={<Services />} />
+          <Route path="/services" element={<Navigate to="/" replace />} />
           <Route path="/profile/*" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/announcements/*" element={<Announcements />} />

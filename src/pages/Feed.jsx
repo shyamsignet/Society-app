@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Send } from 'lucide-react'
-import { Page, Button, Textarea, MediaPicker, Toggle, Avatar, Card, Empty, useAction } from '../components/ui'
+import { Send, ImagePlus, AlertTriangle } from 'lucide-react'
+import { Page, Button, Textarea, MediaPicker, Toggle, Avatar, Card, Empty, Chips, useAction } from '../components/ui'
 import PostCard from '../components/PostCard'
+import AnnouncementCard from '../components/AnnouncementCard'
+import { can } from '../lib/rbac'
+import { isActiveAnnouncement } from '../lib/actions'
+import { sortAnnouncements } from './Home'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { POST_CATEGORIES, createPost, addComment, userById, aptNo } from '../lib/actions'
@@ -11,9 +15,37 @@ import { cls, timeAgo } from '../lib/utils'
 export default function Feed() {
   return (
     <Routes>
+      <Route index element={<FeedHome />} />
       <Route path="new" element={<NewPost />} />
       <Route path="post/:id" element={<PostDetail />} />
     </Routes>
+  )
+}
+
+// Community feed: neighbours' posts mixed with active committee notices, newest first.
+function FeedHome() {
+  const { user } = useAuth()
+  const nav = useNavigate()
+  const [cat, setCat] = useState('all')
+  const announcements = useData((d) => sortAnnouncements(d.list('announcements', isActiveAnnouncement)))
+  const posts = useData((d) => d.list('posts', (p) => !p.hidden || p.userId === user.id || can(user, 'moderation')).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
+  const counts = posts.reduce((m, p) => ({ ...m, [p.category]: (m[p.category] || 0) + 1 }), {})
+  const feedItems = [...posts.map((p) => ({ kind: 'post', item: p })), ...announcements.map((a) => ({ kind: 'notice', item: a }))]
+    .sort((x, y) => new Date(y.item.createdAt) - new Date(x.item.createdAt))
+  const shown = cat === 'all' ? feedItems : cat === 'notices' ? feedItems.filter((f) => f.kind === 'notice') : feedItems.filter((f) => f.kind === 'post' && f.item.category === cat)
+  return (
+    <Page title="Community feed" subtitle="Posts from your neighbours and committee notices">
+      <Card className="p-3 flex items-center gap-3 mb-3 mt-1" onClick={() => nav('/feed/new')}>
+        <Avatar user={user} size={38} />
+        <span className="flex-1 text-sm text-ink-400">Share something with your neighbours…</span>
+        <ImagePlus size={20} className="text-accent-600" />
+      </Card>
+      <Chips className="mb-3" value={cat} onChange={setCat} options={[{ value: 'all', label: 'All', count: feedItems.length }, { value: 'notices', label: '📢 Notices', count: announcements.length }, ...POST_CATEGORIES.map((c) => ({ value: c.id, label: `${c.emoji} ${c.label}`, count: counts[c.id] || 0 }))]} />
+      <div className="space-y-3">
+        {shown.map((f) => f.kind === 'notice' ? <AnnouncementCard key={'n' + f.item.id} a={f.item} feed /> : <PostCard key={f.item.id} post={f.item} />)}
+        {!shown.length && <Empty icon={AlertTriangle} title="No posts here yet" text="Be the first to post in this category." action={cat !== 'notices' && <Button onClick={() => nav(`/feed/new?cat=${cat === 'all' ? 'general' : cat}`)}>Create post</Button>} />}
+      </div>
+    </Page>
   )
 }
 

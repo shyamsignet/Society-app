@@ -372,4 +372,6 @@ export default [
   ['Try the demo with a sample society', 'नमुना सोसायटीसह डेमो पाहा', 'नमूना सोसाइटी के साथ डेमो देखें'],
   ['Demo with sample data – stored only on this device. Tap “Log out / switch demo account” in Profile to try another role.', 'नमुना माहितीसह डेमो – फक्त या डिव्हाइसवर साठवली जाते. दुसरी भूमिका पाहण्यासाठी प्रोफाइलमध्ये “लॉग आउट / डेमो खाते बदला” दाबा.', 'नमूना डेटा के साथ डेमो – केवल इस डिवाइस पर सेव. दूसरी भूमिका देखने के लिए प्रोफ़ाइल में “लॉग आउट / डेमो खाता बदलें” दबाएँ.'],
   ['Back to the real SociYo app', 'खऱ्या SociYo ॲपवर परत जा', 'असली SociYo ऐप पर वापस जाएँ'],
+  ['Feed', 'फीड', 'फ़ीड'],
+  ['Posts from your neighbours and committee notices', 'शेजाऱ्यांच्या पोस्ट आणि समितीच्या सूचना', 'पड़ोसियों की पोस्ट और समिति की सूचनाएँ'],
 ]
