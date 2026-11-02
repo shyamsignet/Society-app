@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { Pin, Paperclip, CheckCheck, Share2 } from 'lucide-react'
-import { Badge } from './ui'
+import { Badge, useToast } from './ui'
 import { useAuth } from '../lib/auth'
-import { timeAgo, cls, fmtShort, appLink, shareOnWhatsApp } from '../lib/utils'
+import { timeAgo, cls, fmtShort, appLink, shareText } from '../lib/utils'
 
 export const PRIORITY = {
   urgent: { label: 'Urgent', color: 'red', stripe: 'from-red-500 to-orange-500', bg: 'bg-gradient-to-br from-red-50 to-white' },
@@ -23,6 +23,15 @@ export const announcementShareText = (a, society) => [
   `Read in SociYo: ${appLink(`/announcements/${a.id}`)}`
 ].join('\n')
 
+// Opens the phone's share menu (WhatsApp, SMS, …) – same as sharing a feed post.
+export const useShareAnnouncement = () => {
+  const toast = useToast()
+  return async (a, society) => {
+    const r = await shareText({ title: a.title, text: announcementShareText(a, society) })
+    if (r === 'copied') toast('Copied – paste it in WhatsApp')
+  }
+}
+
 export default function AnnouncementCard({ a, compact, feed }) {
   const nav = useNavigate()
   const { user, society } = useAuth()
@@ -30,7 +39,8 @@ export default function AnnouncementCard({ a, compact, feed }) {
   const unread = !a.readBy.includes(user.id)
   const needsAck = a.requiresAck && !a.ackBy.includes(user.id)
   const open = () => nav(`/announcements/${a.id}`)
-  const share = (e) => { e.stopPropagation(); shareOnWhatsApp(announcementShareText(a, society)) }
+  const shareAnn = useShareAnnouncement()
+  const share = (e) => { e.stopPropagation(); shareAnn(a, society) }
   return (
     <div role="button" tabIndex={0} onClick={open} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open()} className={cls('relative w-full text-left rounded-2xl shadow-card overflow-hidden border border-white active:scale-[.99] transition', p.bg, compact ? 'p-4 pl-5' : 'p-4 pl-5')}>
       <span className={cls('absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b', p.stripe)} />
@@ -48,7 +58,7 @@ export default function AnnouncementCard({ a, compact, feed }) {
         {a.expiresAt && <span className="text-ink-400">Valid till {fmtShort(a.expiresAt)}</span>}
         {needsAck && <span className="ml-auto text-red-600">Acknowledgement needed</span>}
         {a.requiresAck && !needsAck && <span className="ml-auto flex items-center gap-1 text-accent-600"><CheckCheck size={13} /> Acknowledged</span>}
-        <button type="button" aria-label="Share on WhatsApp" title="Share on WhatsApp" onClick={share} className={cls('h-8 w-8 -my-1 -mr-1 grid place-items-center rounded-full text-ink-500 hover:bg-ink-100', !a.requiresAck && 'ml-auto')}><Share2 size={17} /></button>
+        <button type="button" aria-label="Share" title="Share" onClick={share} className={cls('h-8 w-8 -my-1 -mr-1 grid place-items-center rounded-full text-ink-500 hover:bg-ink-100', !a.requiresAck && 'ml-auto')}><Share2 size={17} /></button>
       </div>
     </div>
   )

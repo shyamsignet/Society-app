@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom'
-import { Plus, Minus, MapPin, Clock, Users, BellRing, BellOff, CalendarPlus, ImagePlus, ChevronLeft, ChevronRight, CalendarDays, Share2, ArrowLeft, Check, Receipt, Trash2, Wallet, ArrowRight } from 'lucide-react'
+import { Plus, Minus, MapPin, Clock, Users, BellRing, BellOff, CalendarPlus, ImagePlus, ChevronLeft, ChevronRight, CalendarDays, Share2, ArrowLeft, Check, Receipt, Trash2, Wallet, ArrowRight, Pencil } from 'lucide-react'
 import { Page, Button, Card, Tabs, Empty, Field, Input, Textarea, Select, Avatar, MediaPicker, MediaGrid, Sheet, Badge, useAction, useToast, useConfirm } from '../components/ui'
 import { getLocale } from '../i18n'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { can } from '../lib/rbac'
-import { createEvent, rsvpEvent, toggleReminder, addEventPhotos, userById, household, addEventExpense, removeEventExpense, recordSettlement, removeSettlement, setEventSplit } from '../lib/actions'
-import { fmtDateTime, fmtTime, cls, sameDay, artImage, inr, timeAgo, appLink, shareOnWhatsApp } from '../lib/utils'
+import { createEvent, updateEvent, canEditEvent, rsvpEvent, toggleReminder, addEventPhotos, userById, household, addEventExpense, removeEventExpense, recordSettlement, removeSettlement, setEventSplit } from '../lib/actions'
+import { fmtDateTime, fmtTime, cls, sameDay, artImage, inr, timeAgo, appLink, shareText } from '../lib/utils'
 import { goingCount, headsOf, includedBy, splitEvent } from '../lib/eventSplit'
 
 export default function Events() {
   return (
     <Routes>
       <Route index element={<List />} />
-      <Route path="new" element={<NewEvent />} />
+      <Route path="new" element={<EventForm />} />
+      <Route path=":id/edit" element={<EventForm />} />
       <Route path=":id" element={<Detail />} />
     </Routes>
   )
@@ -33,9 +34,19 @@ export const eventShareText = (e, society) => [
   `👉 RSVP here: ${appLink(`/events/${e.id}`)}`
 ].join('\n')
 
+// Opens the phone's share menu (WhatsApp, SMS, …) – same as sharing a feed post.
+const useShareEvent = () => {
+  const toast = useToast()
+  return async (e, society) => {
+    const r = await shareText({ title: e.title, text: eventShareText(e, society) })
+    if (r === 'copied') toast('Copied – paste it in WhatsApp')
+  }
+}
+
 function EventCard({ e }) {
   const nav = useNavigate()
   const { user, society } = useAuth()
+  const shareEvent = useShareEvent()
   const my = e.rsvps.find((r) => r.userId === user.id)
   const d = new Date(e.start)
   return (
@@ -43,7 +54,7 @@ function EventCard({ e }) {
       <div className="relative h-32"><img src={e.cover} alt="" className="h-full w-full object-cover" />
         <div className="absolute top-3 left-3 bg-white rounded-xl px-2.5 py-1 text-center shadow"><div className="text-[10px] font-bold text-red-500 uppercase">{d.toLocaleDateString(getLocale(), { month: 'short' })}</div><div className="text-lg font-extrabold leading-none">{d.getDate()}</div></div>
         {my && <Badge color={my.status === 'going' ? 'green' : 'amber'} className="absolute top-3 right-14 !bg-white">{my.status === 'going' ? '✓ Going' : 'Maybe'}</Badge>}
-        <button type="button" aria-label="Share on WhatsApp" title="Share on WhatsApp" onClick={(ev) => { ev.stopPropagation(); shareOnWhatsApp(eventShareText(e, society)) }} className="absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-white text-ink-700 shadow grid place-items-center"><Share2 size={17} /></button>
+        <button type="button" aria-label="Share" title="Share" onClick={(ev) => { ev.stopPropagation(); shareEvent(e, society) }} className="absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-white text-ink-700 shadow grid place-items-center"><Share2 size={17} /></button>
       </div>
       <div className="p-4">
         <div className="text-[11px] font-bold text-pink-600 uppercase tracking-wide">{e.category}</div>
@@ -133,9 +144,11 @@ function Detail() {
   const reminder = e.reminders.includes(user.id)
   const org = userById(e.organizerId)
   const attendees = e.rsvps.filter((r) => r.status === 'going')
-  const share = () => shareOnWhatsApp(eventShareText(e, society))
+  const shareEvent = useShareEvent()
+  const share = () => shareEvent(e, society)
+  const editable = canEditEvent(user, e)
   return (
-    <Page noPad hero={<div className="relative"><img src={e.cover} alt="" className="w-full h-60 object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><button aria-label="Back" onClick={() => nav('/events')} className="absolute left-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><ArrowLeft size={20} /></button><button aria-label="Share on WhatsApp" onClick={share} className="absolute right-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><Share2 size={19} /></button></div>}>
+    <Page noPad hero={<div className="relative"><img src={e.cover} alt="" className="w-full h-60 object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><button aria-label="Back" onClick={() => nav('/events')} className="absolute left-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><ArrowLeft size={20} /></button>{editable && <button aria-label="Edit event" onClick={() => nav(`/events/${e.id}/edit`)} className="absolute right-16 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><Pencil size={18} /></button>}<button aria-label="Share" onClick={share} className="absolute right-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><Share2 size={19} /></button></div>}>
       <div className="px-4 -mt-10 relative">
         <Card className="p-5">
           <div className="text-[11px] font-bold text-pink-600 uppercase tracking-wide">{e.emoji} {e.category}</div>
@@ -146,6 +159,7 @@ function Detail() {
             <div className="flex items-center gap-3"><Avatar user={org} size={36} /><div><div className="text-xs text-ink-500">Organised by</div><div className="font-semibold">{org?.name}</div></div></div>
           </div>
           <p className="text-[15px] text-ink-700 mt-4 leading-relaxed whitespace-pre-line">{e.description}</p>
+          {editable && <Button variant="secondary" size="sm" icon={Pencil} className="mt-4" onClick={() => nav(`/events/${e.id}/edit`)}>Edit event</Button>}
         </Card>
 
         <Card className="p-4 mt-3" onClick={() => setPeople(true)}>
@@ -160,7 +174,7 @@ function Detail() {
           <div className="grid grid-cols-3 gap-2 mt-2">
             <Button variant="secondary" size="sm" icon={reminder ? BellOff : BellRing} onClick={() => { const on = act(() => toggleReminder(user, e.id)); toast(on === true ? 'We’ll remind you a day before' : 'Reminder removed', 'info') }}>{reminder ? 'Remind off' : 'Remind me'}</Button>
             <Button variant="secondary" size="sm" icon={CalendarPlus} onClick={() => downloadIcs(e, society)}>Calendar</Button>
-            <Button variant="secondary" size="sm" icon={Share2} onClick={share}>WhatsApp</Button>
+            <Button variant="secondary" size="sm" icon={Share2} onClick={share}>Share</Button>
           </div>
         )}
         <ExpensesCard e={e} />
@@ -194,24 +208,38 @@ function Detail() {
 
 const CATS = [['Festival', '🪔', '#F97316', '#EAB308'], ['Sports', '🏏', '#22C55E', '#3B1F3A'], ['Kids', '🧸', '#EC4899', '#8B5CF6'], ['Meeting', '🗳️', '#3B1F3A', '#6366F1'], ['Social', '🎉', '#0EA5E9', '#8B5CF6'], ['National', '🇮🇳', '#F97316', '#22C55E'], ['Wellness', '🧘', '#14B8A6', '#0EA5E9']]
 
-function NewEvent() {
+const pad = (n) => String(n).padStart(2, '0')
+// ISO time -> value for <input type="datetime-local"> in the phone's own time zone
+const localInput = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` }
+const isArt = (url) => !url || url.startsWith('data:image/svg+xml')
+
+// Create a new event, or edit one (route :id/edit).
+function EventForm() {
+  const { id } = useParams()
   const { user } = useAuth()
   const nav = useNavigate()
   const act = useAction()
-  const pad = (n) => String(n).padStart(2, '0')
+  const existing = useData((d) => (id ? d.get('events', id) : null))
   const d = new Date(Date.now() + 3 * 86400000)
   const dt = (h) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(h)}:00`
-  const [f, setF] = useState({ title: '', category: 'Social', description: '', start: dt(18), end: dt(21), venue: 'Clubhouse', capacity: '' })
-  const [cover, setCover] = useState([])
+  const [f, setF] = useState(() => existing
+    ? { title: existing.title, category: existing.category || 'Social', description: existing.description || '', start: localInput(existing.start), end: localInput(existing.end), venue: existing.venue, capacity: existing.capacity ?? '' }
+    : { title: '', category: 'Social', description: '', start: dt(18), end: dt(21), venue: 'Clubhouse', capacity: '' })
+  const [cover, setCover] = useState(() => (existing && !isArt(existing.cover) ? [{ type: 'image', url: existing.cover }] : []))
   const set = (k) => (ev) => setF({ ...f, [k]: ev.target.value })
-  const cat = CATS.find((c) => c[0] === f.category)
+  const cat = CATS.find((c) => c[0] === f.category) || CATS[4]
   const submit = () => {
-    const e = act(() => createEvent(user, { ...f, start: f.start && new Date(f.start).toISOString(), end: f.end && new Date(f.end).toISOString(), capacity: Number(f.capacity) || null, emoji: cat[1], cover: cover[0]?.url || artImage(cat[1], cat[2], cat[3], f.title.slice(0, 26)) }), 'Event created – residents notified')
+    const data = { ...f, start: f.start && new Date(f.start).toISOString(), end: f.end ? new Date(f.end).toISOString() : null, capacity: Number(f.capacity) || null, emoji: cat[1], cover: cover[0]?.url || artImage(cat[1], cat[2], cat[3], f.title.slice(0, 26)) }
+    const e = existing
+      ? act(() => updateEvent(user, existing.id, data), 'Event updated')
+      : act(() => createEvent(user, data), 'Event created – residents notified')
     if (e) nav(`/events/${e.id}`, { replace: true })
   }
-  if (!can(user, 'events.create')) return <Page title="Create event" back><Empty title="Not allowed" /></Page>
+  if (id && !existing) return <Page title="Edit event" back><Empty title="Event not found" /></Page>
+  if (existing ? !canEditEvent(user, existing) : !can(user, 'events.create')) return <Page title={existing ? 'Edit event' : 'Create event'} back><Empty title="Not allowed" text={existing ? 'Only the organiser or the committee can edit this event.' : undefined} /></Page>
+  const venues = ['Clubhouse', 'Community Hall', 'Central Lawn', 'Sports Ground', 'Swimming Pool', 'Rooftop Area', 'Main Gate Plaza', 'Party Hall']
   return (
-    <Page title="Create event" back>
+    <Page title={existing ? 'Edit event' : 'Create event'} back>
       <Field label="Event name"><Input value={f.title} onChange={set('title')} placeholder="e.g. Holi Celebration 2027" /></Field>
       <Field label="Category">
         <div className="flex flex-wrap gap-2">{CATS.map(([c, em]) => <button type="button" key={c} onClick={() => setF({ ...f, category: c })} className={cls('h-9 px-3 rounded-full text-[13px] font-semibold border', f.category === c ? 'bg-brand-800 text-white border-brand-800' : 'bg-white border-ink-200')}>{em} {c}</button>)}</div>
@@ -222,11 +250,11 @@ function NewEvent() {
         <Field label="Ends"><Input type="datetime-local" value={f.end} onChange={set('end')} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Venue"><Select value={f.venue} onChange={set('venue')}>{['Clubhouse', 'Community Hall', 'Central Lawn', 'Sports Ground', 'Swimming Pool', 'Rooftop Area', 'Main Gate Plaza', 'Party Hall'].map((v) => <option key={v}>{v}</option>)}</Select></Field>
+        <Field label="Venue"><Select value={f.venue} onChange={set('venue')}>{(venues.includes(f.venue) ? venues : [f.venue, ...venues]).map((v) => <option key={v}>{v}</option>)}</Select></Field>
         <Field label="Max participants"><Input type="number" min={1} value={f.capacity} onChange={set('capacity')} placeholder="No limit" /></Field>
       </div>
       <Field label="Cover image (optional)" hint="A colourful cover is generated if you skip this"><MediaPicker value={cover} onChange={setCover} max={1} allowVideo={false} label="Cover" /></Field>
-      <Button block size="lg" onClick={submit} disabled={!f.title.trim()}>Create & notify residents</Button>
+      <Button block size="lg" onClick={submit} disabled={!f.title.trim()}>{existing ? 'Save changes' : 'Create & notify residents'}</Button>
     </Page>
   )
 }

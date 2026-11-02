@@ -121,8 +121,3 @@ export const shareText = async ({ title, text, url }) => {
 
 // Link that opens a screen of this app (HashRouter), e.g. appLink('/announcements/a1').
 export const appLink = (path = '/') => `${location.origin}${location.pathname}#${path}`
-
-// Opens WhatsApp with the text pre-filled, so the user only picks the chat/group.
-export const shareOnWhatsApp = (text) => {
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
-}
