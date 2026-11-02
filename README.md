@@ -65,7 +65,7 @@ Test-card tip: on the simulated payment gateway, any card works; a card ending i
 - **Facilities** – 8 amenities, 14-day date strip, slot grid, rules, charges, approvals, cancellation, double-booking prevention and per-flat limits.
 - **Directory** – searchable residents by tower with privacy controls, committee, useful & emergency contacts with one-tap call/WhatsApp.
 - **Marketplace** – sell, rent, services, free, wanted; photos, price, expiry, renew, mark sold, call/WhatsApp seller.
-- **Events** – calendar, RSVP for yourself + the family members you bring + outside guests (capacity counts everyone), reminders, add to phone calendar (.ics), photo gallery, and **shared expenses**: attendees add what they paid (with bill photo), the total is split per person or per family, and the app shows who pays whom and tracks settlements.
+- **Events** – calendar, RSVP for yourself + the family members you bring + outside guests (capacity counts everyone), reminders, add to phone calendar (.ics), photo gallery, and **event accounts**: collect a contribution up front (per family or per person) and/or add expenses as people spend (with bill photos); the app shows Collected · Spent · Remaining, each family's share and balance, who pays whom (or keeps the leftover for the next event), lets the organiser publish the accounts to attendees, share a WhatsApp summary and print a statement / save it as PDF.
 - **Polls** – single/multiple choice, closing date, anonymous voting, live results, eligibility (per flat / per resident / owners only).
 - **Emergency** – SOS to security, one-tap 108/101/100/112, society contacts, admin-only emergency broadcasts.
 - **Notifications** – in-app centre, per-category preferences, real device notifications (when allowed), reminders for dues and events.
@@ -107,7 +107,7 @@ src/
   pages/Onboarding.jsx  join a society / society setup wizard
   pages/admin/Import.jsx  CSV import of residents (roles, opening balances) and flats
 supabase/setup.sql   the whole backend: tables, permission checks, sync feed, storage
-supabase/test/       security tests (85 checks) + a local Supabase stand-in for testing
+supabase/test/       security tests (88 checks) + a local Supabase stand-in for testing
 docs/GO-LIVE.md      step-by-step: from zero to a live society
 ```
 

@@ -146,6 +146,9 @@ const recs = (res, col) => (res.r.records || []).filter((x) => x.c === col).map(
   ok('cannot delete someone else\'s expense', !(await save(FAM, 'events', 'ev1', { expenses: [] })).ok)
   ok('cannot record a payment between two other people', !(await save(FAM, 'events', 'ev1', { settlements: [{ id: 's1', userId: 'u_fam', from: 'u_res', to: 'u_chair', amount: 100 }] })).ok)
   ok('can record a payment you made', (await save(FAM, 'events', 'ev1', { settlements: [{ id: 's2', userId: 'u_fam', from: 'u_fam', to: 'u_res', amount: 300 }] })).ok)
+  ok('resident records a contribution they gave', (await save(FAM, 'events', 'ev1', { settlements: [{ id: 's2', userId: 'u_fam', from: 'u_fam', to: 'u_res', amount: 300 }, { id: 'c1', kind: 'contribution', userId: 'u_fam', from: 'u_fam', to: 'u_chair', amount: 500 }] })).ok)
+  ok("cannot record a contribution between two other people", !(await save(FAM, 'events', 'ev1', { settlements: [{ id: 's2', userId: 'u_fam', from: 'u_fam', to: 'u_res', amount: 300 }, { id: 'c1', kind: 'contribution', userId: 'u_fam', from: 'u_fam', to: 'u_chair', amount: 500 }, { id: 'c2', kind: 'contribution', userId: 'u_fam', from: 'u_res', to: 'u_chair', amount: 500 }] })).ok)
+  ok('only the organiser sets the contribution amount', !(await save(FAM, 'events', 'ev1', { contribution: { amount: 1, per: 'family' } })).ok)
   ok('organiser can remove a wrong expense', (await save(CHAIR, 'events', 'ev1', { expenses: [] })).ok)
 
   console.log('Sync & lockout')

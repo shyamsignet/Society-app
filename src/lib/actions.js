@@ -616,6 +616,44 @@ export function setEventSplit(user, id, split) {
   must(eventAdmin(user, e), 'Only the organiser can change how costs are split.')
   db.update('events', id, { split: split === 'family' ? 'family' : 'person' })
 }
+export const isEventAdmin = (user, e) => !!(user && e) && eventAdmin(user, e)
+// Money collected for the event (e.g. ₹500 per family up front). Members record what they
+// gave ("I gave ₹500 to Rajendra"); the organiser/committee can record it for anyone.
+export function recordContribution(user, id, { from, to, amount, note = '' }) {
+  const e = db.get('events', id)
+  must(e, 'Event not found.')
+  must(from && to, 'Choose who gave the money and who received it.')
+  must(eventAdmin(user, e) || from === user.id || to === user.id, 'You can only record money you gave or received.')
+  const amt = Math.round(Number(amount) * 100) / 100
+  must(amt > 0 && amt <= 10000000, 'Enter the amount.')
+  const c = { id: uid('ct_'), kind: 'contribution', userId: user.id, from, to, amount: amt, note: String(note || '').trim().slice(0, 80), at: new Date().toISOString() }
+  db.update('events', id, { settlements: [...(e.settlements || []), c] })
+  for (const other of [from, to].filter((x) => x !== user.id)) notify(other, { type: 'events', title: other === to ? `${userById(from)?.name || 'Someone'} gave you ${inr(amt)} for ${e.title}` : `${user.name} recorded your contribution of ${inr(amt)} for ${e.title}`, link: `/events/${id}` })
+  return c
+}
+// Organiser settings for the accounts: expected contribution, split, keep leftover.
+export function setEventAccounts(user, id, { contribution, split, keepSurplus }) {
+  const e = db.get('events', id)
+  must(eventAdmin(user, e), 'Only the organiser or the committee can change the event accounts.')
+  const patch = {}
+  if (contribution !== undefined) {
+    const amt = Math.round(Number(contribution?.amount) || 0)
+    must(amt >= 0 && amt <= 1000000, 'Check the contribution amount.')
+    patch.contribution = amt ? { amount: amt, per: contribution.per === 'person' ? 'person' : 'family' } : null
+  }
+  if (split !== undefined) patch.split = split === 'family' ? 'family' : 'person'
+  if (keepSurplus !== undefined) patch.keepSurplus = !!keepSurplus
+  db.update('events', id, patch)
+}
+// Organiser shares the final accounts: everyone who attended is notified.
+export function publishEventAccounts(user, id) {
+  const e = db.get('events', id)
+  must(eventAdmin(user, e), 'Only the organiser or the committee can publish the accounts.')
+  must((e.expenses || []).length || (e.settlements || []).length, 'Add the expenses or contributions first.')
+  db.update('events', id, { accountsPublishedAt: new Date().toISOString(), accountsPublishedBy: user.id })
+  const ids = [...new Set([...e.rsvps.filter((r) => r.status === 'going').map((r) => r.userId), e.organizerId])].filter((x) => x !== user.id)
+  if (ids.length) notify(ids, { type: 'events', title: `Accounts for ${e.title} are ready`, body: 'See what was collected, spent and who pays whom.', link: `/events/${id}/accounts` })
+}
 export function toggleReminder(user, id) {
   const e = db.get('events', id)
   const on = e.reminders.includes(user.id)
