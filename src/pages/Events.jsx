@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth'
 import { useData } from '../lib/db'
 import { can } from '../lib/rbac'
 import { createEvent, rsvpEvent, toggleReminder, addEventPhotos, userById, household, addEventExpense, removeEventExpense, recordSettlement, removeSettlement, setEventSplit } from '../lib/actions'
-import { fmtDateTime, fmtTime, cls, sameDay, artImage, shareText, inr, timeAgo } from '../lib/utils'
+import { fmtDateTime, fmtTime, cls, sameDay, artImage, inr, timeAgo, appLink, shareOnWhatsApp } from '../lib/utils'
 import { goingCount, headsOf, includedBy, splitEvent } from '../lib/eventSplit'
 
 export default function Events() {
@@ -21,16 +21,29 @@ export default function Events() {
 }
 const going = goingCount
 
+// WhatsApp-formatted invite with a link that opens this event in the app for RSVP.
+export const eventShareText = (e, society) => [
+  `${e.emoji || '🎉'} *${e.title}*`,
+  `🏡 ${society?.name || ''}`.trim(),
+  '',
+  `🗓️ ${fmtDateTime(e.start)}`,
+  `📍 ${e.venue}`,
+  ...(e.description ? ['', e.description.length > 300 ? e.description.slice(0, 300).trimEnd() + '…' : e.description] : []),
+  '',
+  `👉 RSVP here: ${appLink(`/events/${e.id}`)}`
+].join('\n')
+
 function EventCard({ e }) {
   const nav = useNavigate()
-  const { user } = useAuth()
+  const { user, society } = useAuth()
   const my = e.rsvps.find((r) => r.userId === user.id)
   const d = new Date(e.start)
   return (
     <Card className="overflow-hidden" onClick={() => nav(`/events/${e.id}`)}>
       <div className="relative h-32"><img src={e.cover} alt="" className="h-full w-full object-cover" />
         <div className="absolute top-3 left-3 bg-white rounded-xl px-2.5 py-1 text-center shadow"><div className="text-[10px] font-bold text-red-500 uppercase">{d.toLocaleDateString(getLocale(), { month: 'short' })}</div><div className="text-lg font-extrabold leading-none">{d.getDate()}</div></div>
-        {my && <Badge color={my.status === 'going' ? 'green' : 'amber'} className="absolute top-3 right-3 !bg-white">{my.status === 'going' ? '✓ Going' : 'Maybe'}</Badge>}
+        {my && <Badge color={my.status === 'going' ? 'green' : 'amber'} className="absolute top-3 right-14 !bg-white">{my.status === 'going' ? '✓ Going' : 'Maybe'}</Badge>}
+        <button type="button" aria-label="Share on WhatsApp" title="Share on WhatsApp" onClick={(ev) => { ev.stopPropagation(); shareOnWhatsApp(eventShareText(e, society)) }} className="absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-white text-ink-700 shadow grid place-items-center"><Share2 size={17} /></button>
       </div>
       <div className="p-4">
         <div className="text-[11px] font-bold text-pink-600 uppercase tracking-wide">{e.category}</div>
@@ -120,8 +133,9 @@ function Detail() {
   const reminder = e.reminders.includes(user.id)
   const org = userById(e.organizerId)
   const attendees = e.rsvps.filter((r) => r.status === 'going')
+  const share = () => shareOnWhatsApp(eventShareText(e, society))
   return (
-    <Page noPad hero={<div className="relative"><img src={e.cover} alt="" className="w-full h-60 object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><button aria-label="Back" onClick={() => nav('/events')} className="absolute left-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><ArrowLeft size={20} /></button></div>}>
+    <Page noPad hero={<div className="relative"><img src={e.cover} alt="" className="w-full h-60 object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><button aria-label="Back" onClick={() => nav('/events')} className="absolute left-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><ArrowLeft size={20} /></button><button aria-label="Share on WhatsApp" onClick={share} className="absolute right-3 top-3 h-10 w-10 rounded-full bg-black/40 backdrop-blur text-white grid place-items-center safe-top"><Share2 size={19} /></button></div>}>
       <div className="px-4 -mt-10 relative">
         <Card className="p-5">
           <div className="text-[11px] font-bold text-pink-600 uppercase tracking-wide">{e.emoji} {e.category}</div>
@@ -146,7 +160,7 @@ function Detail() {
           <div className="grid grid-cols-3 gap-2 mt-2">
             <Button variant="secondary" size="sm" icon={reminder ? BellOff : BellRing} onClick={() => { const on = act(() => toggleReminder(user, e.id)); toast(on === true ? 'We’ll remind you a day before' : 'Reminder removed', 'info') }}>{reminder ? 'Remind off' : 'Remind me'}</Button>
             <Button variant="secondary" size="sm" icon={CalendarPlus} onClick={() => downloadIcs(e, society)}>Calendar</Button>
-            <Button variant="secondary" size="sm" icon={Share2} onClick={async () => { const r = await shareText({ title: e.title, text: `${e.title} – ${fmtDateTime(e.start)} at ${e.venue}, ${society.name}. RSVP on SociYo!` }); if (r === 'copied') toast('Copied') }}>Share</Button>
+            <Button variant="secondary" size="sm" icon={Share2} onClick={share}>WhatsApp</Button>
           </div>
         )}
         <ExpensesCard e={e} />
